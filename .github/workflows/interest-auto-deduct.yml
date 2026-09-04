@@ -1,0 +1,67 @@
+name: Add automatic monthly interest allocation
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[interest-auto-deduct]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch interest payment logic
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text()
+          pattern=r'function payment\(i\)\{.*?function stopInterest\(i\)\{'
+          replacement=r'''function monthKey(d){let x=new Date(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')}
+          function monthLabel(k){let [y,m]=k.split('-');return m+'/'+y}
+          function addMonths(k,n){let [y,m]=k.split('-').map(Number),d=new Date(y,m-1+n,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
+          function syncInterestMonths(p){
+            p.interestMonths=p.interestMonths||[];
+            let loans=(p.records||[]).filter(r=>r.type==='loan'&&r.amount>0&&r.date);
+            for(let r of loans){
+              let start=monthKey(r.date), end=monthKey(new Date()), cur=start;
+              let monthly=Number(r.amount||0)*Number(p.rate||0)/100;
+              while(cur<=end){
+                let id=(r.id||r.date+'-'+r.amount)+'@'+cur;
+                if(!p.interestMonths.some(x=>x.id===id))p.interestMonths.push({id,month:cur,due:monthly,paid:0,loanDate:r.date});
+                cur=addMonths(cur,1);
+              }
+            }
+            p.interestMonths.sort((a,b)=>a.month.localeCompare(b.month));
+          }
+          function unpaidInterest(p,until){syncInterestMonths(p);return p.interestMonths.filter(x=>x.month<=until&&Number(x.due)>Number(x.paid||0))}
+          function applyInterestPayment(p,n,until){
+            syncInterestMonths(p);
+            let left=n,applied=0;
+            for(let x of unpaidInterest(p,until)){
+              if(left<=0)break;
+              let take=Math.min(left,Math.max(0,Number(x.due)-Number(x.paid||0)));
+              x.paid=Number(x.paid||0)+take;left-=take;applied+=take;
+            }
+            if(applied>0){p.interest=Math.max(0,Number(p.interest||0)-applied);p.balance=Math.max(0,Number(p.balance||0)-applied)}
+            return {applied,left};
+          }
+          function payment(i){let p=data.people[i],today=new Date().toISOString().slice(0,10),month=monthKey(today);syncInterestMonths(p);modal(`<h2>ငွေပေးချေမှု</h2><div class="field"><label>ပေးချေငွေ</label><input id="payAmt" type="number" value="${p.balance}"></div><div class="field"><label>ပေးချေသည့်ရက်</label><input id="payDate" type="date" value="${today}"></div><div class="field"><label>အတိုးတွက်/ပေးမည့်လ</label><input id="payMonth" type="month" value="${month}"></div><select class="field" id="payType"><option value="interest">အတိုး</option><option value="principal">အရင်း</option><option value="both">အတိုး + အရင်း</option></select><div class="mini">အတိုးပေးလျှင် အရင်ဆုံး မပေးရသေးသော အဟောင်းဆုံးလကို Auto နှုတ်ပေးမည်။</div><div id="interestPreview" class="mini"></div><div class="field"><label>မှတ်ချက်</label><input id="payNote"></div><button class="btn primary wide" onclick="savePayment(${i})">သိမ်းမည်</button>`);updateInterestPreview(i)}
+          function updateInterestPreview(i){let p=data.people[i],m=document.getElementById('payMonth')?.value;if(!m)return;let due=unpaidInterest(p,m).reduce((a,x)=>a+Math.max(0,Number(x.due)-Number(x.paid||0)),0);let el=document.getElementById('interestPreview');if(el)el.textContent='မပေးရသေးသော အတိုး: '+money(due)+' · '+unpaidInterest(p,m).length+' လ';document.getElementById('payMonth')?.addEventListener('change',()=>updateInterestPreview(i),{once:true})}
+          function savePayment(i){let n=+document.getElementById('payAmt').value;if(n<=0)return;let p=data.people[i],type=document.getElementById('payType').value,d=document.getElementById('payDate').value||new Date().toISOString().slice(0,10),m=document.getElementById('payMonth').value||monthKey(d),interestApplied=0;
+            if(type==='interest'){let z=applyInterestPayment(p,n,m);interestApplied=z.applied;n=z.applied}
+            else if(type==='principal'){let x=Math.min(n,p.principal);p.principal-=x;p.balance=Math.max(0,p.balance-x)}
+            else{let z=applyInterestPayment(p,n,m);interestApplied=z.applied;let rem=n-z.applied;if(rem>0){let x=Math.min(rem,p.principal);p.principal-=x;p.balance=Math.max(0,p.balance-x)}}
+            p.records=p.records||[];p.records.unshift({id:Date.now(),type:'payment',amount:+document.getElementById('payAmt').value,note:document.getElementById('payNote').value,date:d,month:m,interestApplied});log(p.name+' ငွေပေး '+money(+document.getElementById('payAmt').value)+' · အတိုး Auto '+money(interestApplied));save();closeModal();detail(i)}function stopInterest(i){'''
+          ns,n=re.subn(pattern,replacement,s,flags=re.S)
+          if n!=1: raise SystemExit(f'payment block not found: {n}')
+          p.write_text(ns)
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'Add automatic monthly interest allocation [interest-auto-deduct]'
+          git push
