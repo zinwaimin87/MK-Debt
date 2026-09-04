@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="my">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>အကြွေးရစရာ စီမံခန့်ခွဲမှု</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;width:100%;min-height:100%;overflow-x:hidden}
+body{background:#e9e6df;color:#26384a;font-family:Georgia,"Noto Serif Myanmar",serif;-webkit-text-size-adjust:100%}
+button,input,select{font:inherit}button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.top{background:#24313d;height:6px}
+.app{width:100%;max-width:430px;min-height:100vh;margin:0 auto;background:#f7f3ea;box-shadow:0 0 22px #00000012}
+header{padding:10px 12px 9px;display:grid;grid-template-columns:50px minmax(0,1fr) auto;align-items:center;gap:8px;border-bottom:2px solid #b69a58;background:#fbf8f0;position:sticky;top:0;z-index:5}
+.menu{width:46px;height:46px;border:2px solid #293b4d;border-radius:9px;background:#fff8e8;font-size:23px;line-height:1;box-shadow:0 2px 5px #7776;flex:none;padding:0}
+header h1{font-size:21px;line-height:1.12;margin:1px 0 0;overflow-wrap:anywhere}
+header .muted{font-size:11px;line-height:1.2;color:#68717a}
+.actions{display:flex;gap:5px;align-items:center}
+.actions .btn{min-width:0}
+.btn{border:1px solid #c9c0af;border-radius:8px;background:#fffdf7;padding:8px 9px;color:#31465b;white-space:nowrap;font-size:13px;min-height:40px}
+.primary{background:#304b66;color:white;border:0}
+main{padding:11px 11px 82px}
+.card{background:#fffdf8;border:1px solid #d3ccbc;border-radius:12px;padding:13px;margin-bottom:10px;box-shadow:0 2px 7px #0000000b}
+.green{background:#355f4e;color:white;border-color:#a88a45}
+.green strong{font-size:27px;display:block;margin:5px 0}
+h2{font-size:20px;line-height:1.2;margin:0 0 8px}
+.search{width:100%;padding:11px 12px;border:1px solid #cfc6b5;border-radius:9px;background:#fff;font-size:16px;margin:8px 0 11px;outline:none}
+.person{display:grid;grid-template-columns:44px minmax(0,1fr) auto 38px;gap:7px;align-items:center;border:1px solid #d8d0c0;border-radius:10px;padding:9px 7px;background:#fffdf8;margin:8px 0}
+.avatar{width:42px;height:42px;border-radius:9px;background:#efe5c8;display:grid;place-items:center;font-size:19px}
+.person b{font-size:15px}
+.amount{text-align:right;font-weight:bold;font-size:13px;line-height:1.3;max-width:95px;overflow-wrap:anywhere}
+.plus{font-size:22px;background:#f3f6f8;border:0;border-left:1px solid #ddd;height:100%;min-height:42px;border-radius:0 7px 7px 0}
+.detailTop{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.detailTop .primary{grid-column:1/-1}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.stat{background:#f3efe6;border-radius:8px;padding:10px;border-left:4px solid #47667e;min-width:0}
+.stat b{font-size:17px;overflow-wrap:anywhere;line-height:1.25}
+.interest{border-left-color:#a86d4c}
+.balance{border-left-color:#a9812c}
+.loan{border-top:3px solid #b18a35}
+.loan .big{font-size:21px;color:#35516a;line-height:1.3}
+.mini{font-size:13px;color:#777}
+.pay{background:#304d69;color:#fff;border:0;width:100%;padding:12px;border-radius:8px;font-size:16px;margin-top:9px}
+.drawer{position:fixed;left:0;top:0;bottom:0;width:min(320px,86vw);background:#25323e;color:white;z-index:20;padding:18px 13px;display:none;overflow:auto;box-shadow:8px 0 24px #0005}
+.drawer.show{display:block}
+.drawer h2{font-size:21px}
+.drawer .item{padding:12px;border:1px solid #53616d;border-radius:9px;margin:8px 0;background:#2b3a49;font-size:16px}
+.close{float:right;background:#293e5b;color:white;border:1px solid #65748a;border-radius:9px;padding:6px 10px;font-size:18px}
+.chat{position:fixed;right:max(14px,calc((100vw - 430px)/2 + 14px));bottom:14px;background:#20a866;color:white;border:3px solid white;outline:2px solid #5acb91;border-radius:40px;padding:10px 18px;font-size:15px;font-weight:bold;box-shadow:0 4px 12px #555;z-index:9}
+@media(min-width:431px){.app{max-width:430px}}
+@media(max-width:360px){
+ header{grid-template-columns:46px minmax(0,1fr);padding:9px 9px 8px}
+ .menu{width:42px;height:42px;font-size:21px}
+ header h1{font-size:19px}
+ .actions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;margin-top:3px}
+ .actions .btn{width:100%;min-height:38px}
+ main{padding:9px 9px 78px}
+ .card{padding:11px}
+ .green strong{font-size:24px}
+ .person{grid-template-columns:40px minmax(0,1fr) auto 34px}
+ .avatar{width:38px;height:38px}
+ .person b{font-size:14px}
+ .amount{font-size:12px;max-width:80px}
+}
+</style>
+</head>
+<body>
+<div class="top"></div>
+<div class="app">
+<header>
+<button class="menu" onclick="toggleDrawer()">☰</button>
+<div><div class="muted">အဓိက စီမံခန့်ခွဲရန်</div><h1 id="pageTitle">ရရန်အကြွေး</h1></div>
+<div class="actions"><button class="btn" onclick="sharePage()">⇧ Share</button><button class="btn primary" onclick="newPerson()">＋ လူသစ်</button></div>
+</header>
+<main id="main"></main>
+</div>
+<div id="drawer" class="drawer">
+<button class="close" onclick="toggleDrawer()">×</button>
+<h2>အဓိက Menu</h2>
+<div class="item" onclick="showPage('dashboard')">⌂　Dashboard</div>
+<div class="item" onclick="showPage('database')">▤　Database</div>
+<div class="item" onclick="showPage('receivable')">↙　ရရန်အကြွေး</div>
+<div class="item" onclick="showPage('payable')">↗　ပေးရန်အကြွေး</div>
+<div class="item" onclick="showPage('installment')">▦　အရစ်ကျငွေ</div>
+<div class="item" onclick="alert('Salary page ကို နောက်အဆင့်မှာ ထည့်မယ်။')">฿　Salary</div>
+</div>
+<button class="chat">☁ Chat</button>
+<script>
+const data={people:[
+{name:"Phyu Phyu",phone:"09 421 345 678",page:1,thb:48000,mmk:0,principal:20000,paid:0,interest:20000,balance:48000},
+{name:"Zin Min Thu",phone:"",page:4,thb:10900,mmk:5350000,principal:20000,paid:0,interest:20000,balance:162900},
+{name:"Ko Zwe",phone:"",page:1,thb:10200,mmk:0,principal:10000,paid:0,interest:1000,balance:10200}
+]};
+function money(n,c='฿'){return Number(n).toLocaleString()+' '+c}
+function toggleDrawer(){document.getElementById('drawer').classList.toggle('show')}
+function sharePage(){navigator.share?navigator.share({title:'အကြွေးရစရာ',url:location.href}):alert('Share link ကို copy လုပ်နိုင်ပါတယ်။')}
+function showPage(p){toggleDrawer();if(p==='receivable')receivable();else if(p==='dashboard')dashboard();else if(p==='database')database();else if(p==='payable')payable();else installment()}
+function receivable(){document.getElementById('pageTitle').textContent='ရရန်အကြွေး';const total=data.people.reduce((a,p)=>a+p.thb,0),mmk=data.people.reduce((a,p)=>a+p.mmk,0);document.getElementById('main').innerHTML=`<section class="card green"><div>စုစုပေါင်း ရရန်ငွေ</div><strong>${money(total)}</strong><strong>${mmk.toLocaleString()} ကျပ်</strong><div>အတိုး/ကျန်ရှိမှု စာရင်း</div></section><section class="card"><h2>ရရန်ရှိသူများ</h2><div class="muted">အမည်ကိုနှိပ်ပြီး လုပ်ဆောင်ချက်ကို ကြည့်နိုင်ပါတယ်</div><input class="search" placeholder="⌕ အမည်ရှာရန်..." oninput="filterPeople(this.value)"><div id="people">${data.people.map(personRow).join('')}</div></section>`}
+function personRow(p,i){return `<div class="person" data-name="${p.name.toLowerCase()}" onclick="detail(${i})"><div class="avatar">${p.name[0]}</div><div><b style="font-size:20px">${p.name}</b><div class="mini">ချေးငွေရစရာ Page ${p.page}</div></div><div class="amount">${money(p.thb)}<br>${p.mmk?money(p.mmk,'ကျပ်'):''}</div><button class="plus" onclick="event.stopPropagation();addLoan(${i})">＋</button></div>`}
+function filterPeople(q){document.querySelectorAll('.person').forEach(x=>x.style.display=x.dataset.name.includes(q.toLowerCase())?'grid':'none')}
+function detail(i){const p=data.people[i];document.getElementById('pageTitle').textContent=p.name;document.getElementById('main').innerHTML=`<div class="detailTop"><button class="btn" onclick="receivable()">← ပြန်ကြည့်</button><button class="btn" onclick="editPerson(${i})">✎ ပြင်ရန်</button><button class="btn" onclick="sharePage()">⇧ Share</button><button class="btn primary" onclick="addLoan(${i})">＋ ချေးငွေသစ်</button></div><section class="card"><div class="muted">OWNER · ${p.page} Page အတွက်</div><h2>လက်ငွေပေးရန်နှင့် သတ်မှတ်ရန်</h2><div>${p.name}</div></section><section class="card"><div class="person" style="grid-template-columns:44px 1fr 55px"><div class="avatar">${p.name[0]}</div><div><h2 style="margin:0">${p.name}</h2><div class="mini">${p.phone||'ဖုန်းမထည့်ရသေး'}</div></div><b>10%</b></div><div class="grid"><div class="stat"><div>ချေးငွေစုစုပေါင်း</div><b>${money(p.principal)}</b></div><div class="stat"><div>အတိုးပေးပြီး</div><b>${money(p.paid)}</b></div><div class="stat interest"><div>အတိုးကျန်ငွေ</div><b>${money(p.interest)}</b></div><div class="stat balance"><div>Total Balance</div><b>${money(p.balance)}</b></div></div></section><section class="card loan"><h2>အတိုးတွက်ထားသော စာရင်း</h2><div class="big">${money(p.balance)} သွင်းရန်ကျန်ပါတယ်</div><div class="mini">${new Date().toLocaleDateString('en-GB')} မှ စတင်တွက်ချက်ထားသည်</div><button class="btn" style="width:100%;margin-top:10px" onclick="payInterest(${i})">✎ ငွေပေးချေမှု</button><div class="grid" style="margin-top:12px"><div class="stat"><div>စုလက်ရှိအရင်းငွေ</div><b>${money(p.balance-p.interest)}</b></div><div class="stat"><div>ပေးပြီး/စုစုပေါင်း</div><b>${money(p.principal)}</b></div><div class="stat"><div>သွင်းပြီးငွေ</div><b>${money(p.paid)}</b></div><div class="stat interest"><div>သွင်းရန်ကျန်ငွေ</div><b>${money(p.balance)}</b></div></div><button class="pay" onclick="stopInterest(${i})">＋ အတိုးရပ်ပြီး သတ်မှတ်</button></section><section class="card"><h2>သွင်းထားသော မှတ်တမ်း</h2><div class="person" style="grid-template-columns:44px 1fr 80px"><div class="avatar">08</div><div><b>2026 ခုနှစ် 8 လပိုင်း</b><div class="mini">1 ကြိမ် သွင်းထားသည်</div></div><b>${money(2000)}</b></div></section>`}
+function payInterest(i){let p=data.people[i],n=+prompt('ပေးမည့်အတိုးငွေ',p.interest);if(n>0){p.paid+=n;p.interest=Math.max(0,p.interest-n);p.balance=Math.max(0,p.balance-n);detail(i)}}
+function stopInterest(i){let p=data.people[i],n=+prompt('အတိုးရပ်ပြီး ပေါင်းမည့်ငွေ',p.balance);if(n>0){p.balance=n;detail(i)}}
+function addLoan(i){let n=+prompt('ချေးငွေအသစ် ထည့်ပါ','10000');if(n>0){data.people[i].principal+=n;data.people[i].balance+=n;data.people[i].thb+=n;detail(i)}}
+function editPerson(i){let p=data.people[i],n=prompt('အမည်ပြင်ရန်',p.name);if(n){p.name=n;detail(i)}}
+function newPerson(){let n=prompt('လူသစ်အမည်');if(n){data.people.push({name:n,phone:'',page:data.people.length+1,thb:0,mmk:0,principal:0,paid:0,interest:0,balance:0});receivable()}}
+function dashboard(){document.getElementById('pageTitle').textContent='Dashboard';document.getElementById('main').innerHTML='<section class="card"><h2>Owner Tools</h2><p class="muted">Owner / All Link / Location / Activity Log / Share Link / Backup & Restore</p></section>'}
+function database(){document.getElementById('pageTitle').textContent='Database';document.getElementById('main').innerHTML='<section class="card"><h2>September 2026</h2><div class="grid"><div class="stat"><div>ရရန်အကြွေး</div><b>69,100 THB</b></div><div class="stat interest"><div>ပေးရန်အကြွေး</div><b>848,000 THB</b></div></div></section><section class="card"><h2>Salary စာရင်း</h2><p>26/08/2026 — 25/09/2026</p><button class="pay">Salary စာရင်းသို့ ›</button></section><section class="card"><h2>ဝန်ထမ်းစာရင်း</h2><p>Zin Wai Min — Salary 2,500 THB</p><p>Khom — Salary 2,250 THB</p><p>Zin Min Thu — Salary 1,350 THB</p></section>'}
+function payable(){document.getElementById('pageTitle').textContent='ပေးရန်အကြွေး';document.getElementById('main').innerHTML='<section class="card"><h2>ပေးရန်အကြွေး</h2><p class="muted">ဒီ Page ကို screenshot အတိုင်း နောက်အဆင့်မှာ တိုးချဲ့မယ်။</p></section>'}
+function installment(){document.getElementById('pageTitle').textContent='အရစ်ကျငွေ';document.getElementById('main').innerHTML='<section class="card"><h2>အရစ်ကျငွေ</h2><p class="muted">ဒီ Page ကို screenshot အတိုင်း နောက်အဆင့်မှာ တိုးချဲ့မယ်။</p></section>'}
+receivable();
+</script>
+</body>
+</html>
