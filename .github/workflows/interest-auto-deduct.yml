@@ -1,4 +1,4 @@
-name: Add automatic monthly interest allocation
+name: Fix practical monthly interest calculation
 on:
   push:
     branches: [main]
@@ -10,58 +10,71 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch interest payment logic
+      - name: Replace interest engine
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
           p=Path('index.html')
           s=p.read_text()
-          pattern=r'function payment\(i\)\{.*?function stopInterest\(i\)\{'
-          replacement=r'''function monthKey(d){let x=new Date(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')}
-          function monthLabel(k){let [y,m]=k.split('-');return m+'/'+y}
+          start=s.find('function monthKey(')
+          end=s.find('function newPerson(')
+          if start<0 or end<0 or start>=end:
+              raise SystemExit('interest engine boundaries not found')
+          replacement=r'''function monthKey(d){let x=new Date((typeof d==='string'&&d.length===7?d+'-01':d)+'T00:00:00');return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')}
           function addMonths(k,n){let [y,m]=k.split('-').map(Number),d=new Date(y,m-1+n,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
-          function syncInterestMonths(p){
-            p.interestMonths=p.interestMonths||[];
-            let loans=(p.records||[]).filter(r=>r.type==='loan'&&r.amount>0&&r.date);
-            for(let r of loans){
-              let start=monthKey(r.date), end=monthKey(new Date()), cur=start;
-              let monthly=Number(r.amount||0)*Number(p.rate||0)/100;
-              while(cur<=end){
-                let id=(r.id||r.date+'-'+r.amount)+'@'+cur;
-                if(!p.interestMonths.some(x=>x.id===id))p.interestMonths.push({id,month:cur,due:monthly,paid:0,loanDate:r.date});
-                cur=addMonths(cur,1);
+          function fmtMonth(k){let [y,m]=k.split('-');return m+'/'+y}
+          function loans(p){return(p.records||[]).filter(r=>r.type==='loan'&&Number(r.amount)>0&&r.date)}
+          function payments(p){return(p.records||[]).filter(r=>r.type==='payment').slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||Number(a.id||0)-Number(b.id||0))}
+          function rebuildLedger(p){
+            let ls=loans(p).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))||Number(a.id||0)-Number(b.id||0));
+            if(!ls.length)return {months:[],principal:0,interestPaid:0,interestDue:0,principalPaid:0};
+            let first=monthKey(ls[0].date),last=monthKey(new Date()),cur=first,principal=0,interestPaid=0,principalPaid=0,months=[],queue=[];
+            while(cur<=last){
+              for(const l of ls.filter(x=>monthKey(x.date)===cur))principal+=Number(l.amount)||0;
+              let due=p.interestStopped?0:principal*(Number(p.rate)||0)/100;
+              let item={month:cur,due,paid:0,remaining:due,principalStart:principal,principalEnd:principal};
+              if(due>0)queue.push(item);
+              let monthPays=payments(p).filter(x=>(x.month||monthKey(x.date||last))<=cur && monthKey(x.date||last)<=cur);
+              for(const pay of monthPays){
+                if(pay._ledgerApplied)continue;
+                let left=Number(pay.amount)||0;
+                if(pay.type==='principal'){
+                  let take=Math.min(left,principal);principal-=take;principalPaid+=take;pay._ledgerApplied=true;continue;
+                }
+                if(pay.type==='interest' || pay.type==='both' || !pay.type){
+                  for(const q of queue){if(left<=0)break;let need=Math.max(0,q.due-q.paid),take=Math.min(left,need);q.paid+=take;q.remaining=Math.max(0,q.due-q.paid);left-=take;interestPaid+=take}
+                }
+                if(left>0 && pay.type!=='interest'){
+                  let take=Math.min(left,principal);principal-=take;principalPaid+=take;left-=take;
+                }
+                pay._ledgerApplied=true;
               }
+              item.principalEnd=principal;
+              months.push(item);
+              cur=addMonths(cur,1);
             }
-            p.interestMonths.sort((a,b)=>a.month.localeCompare(b.month));
+            for(const pay of payments(p))delete pay._ledgerApplied;
+            let interestDue=months.reduce((a,x)=>a+Math.max(0,x.due-x.paid),0);
+            return {months,principal,interestPaid,interestDue,principalPaid};
           }
-          function unpaidInterest(p,until){syncInterestMonths(p);return p.interestMonths.filter(x=>x.month<=until&&Number(x.due)>Number(x.paid||0))}
-          function applyInterestPayment(p,n,until){
-            syncInterestMonths(p);
-            let left=n,applied=0;
-            for(let x of unpaidInterest(p,until)){
-              if(left<=0)break;
-              let take=Math.min(left,Math.max(0,Number(x.due)-Number(x.paid||0)));
-              x.paid=Number(x.paid||0)+take;left-=take;applied+=take;
-            }
-            if(applied>0){p.interest=Math.max(0,Number(p.interest||0)-applied);p.balance=Math.max(0,Number(p.balance||0)-applied)}
-            return {applied,left};
-          }
-          function payment(i){let p=data.people[i],today=new Date().toISOString().slice(0,10),month=monthKey(today);syncInterestMonths(p);modal(`<h2>ငွေပေးချေမှု</h2><div class="field"><label>ပေးချေငွေ</label><input id="payAmt" type="number" value="${p.balance}"></div><div class="field"><label>ပေးချေသည့်ရက်</label><input id="payDate" type="date" value="${today}"></div><div class="field"><label>အတိုးတွက်/ပေးမည့်လ</label><input id="payMonth" type="month" value="${month}"></div><select class="field" id="payType"><option value="interest">အတိုး</option><option value="principal">အရင်း</option><option value="both">အတိုး + အရင်း</option></select><div class="mini">အတိုးပေးလျှင် အရင်ဆုံး မပေးရသေးသော အဟောင်းဆုံးလကို Auto နှုတ်ပေးမည်။</div><div id="interestPreview" class="mini"></div><div class="field"><label>မှတ်ချက်</label><input id="payNote"></div><button class="btn primary wide" onclick="savePayment(${i})">သိမ်းမည်</button>`);updateInterestPreview(i)}
-          function updateInterestPreview(i){let p=data.people[i],m=document.getElementById('payMonth')?.value;if(!m)return;let due=unpaidInterest(p,m).reduce((a,x)=>a+Math.max(0,Number(x.due)-Number(x.paid||0)),0);let el=document.getElementById('interestPreview');if(el)el.textContent='မပေးရသေးသော အတိုး: '+money(due)+' · '+unpaidInterest(p,m).length+' လ';document.getElementById('payMonth')?.addEventListener('change',()=>updateInterestPreview(i),{once:true})}
-          function savePayment(i){let n=+document.getElementById('payAmt').value;if(n<=0)return;let p=data.people[i],type=document.getElementById('payType').value,d=document.getElementById('payDate').value||new Date().toISOString().slice(0,10),m=document.getElementById('payMonth').value||monthKey(d),interestApplied=0;
-            if(type==='interest'){let z=applyInterestPayment(p,n,m);interestApplied=z.applied;n=z.applied}
-            else if(type==='principal'){let x=Math.min(n,p.principal);p.principal-=x;p.balance=Math.max(0,p.balance-x)}
-            else{let z=applyInterestPayment(p,n,m);interestApplied=z.applied;let rem=n-z.applied;if(rem>0){let x=Math.min(rem,p.principal);p.principal-=x;p.balance=Math.max(0,p.balance-x)}}
-            p.records=p.records||[];p.records.unshift({id:Date.now(),type:'payment',amount:+document.getElementById('payAmt').value,note:document.getElementById('payNote').value,date:d,month:m,interestApplied});log(p.name+' ငွေပေး '+money(+document.getElementById('payAmt').value)+' · အတိုး Auto '+money(interestApplied));save();closeModal();detail(i)}function stopInterest(i){'''
-          ns,n=re.subn(pattern,replacement,s,flags=re.S)
-          if n!=1: raise SystemExit(f'payment block not found: {n}')
-          p.write_text(ns)
+          function syncInterest(p){let l=rebuildLedger(p);p.interestMonths=l.months.map(x=>({id:String(p.id||p.name)+'@'+x.month,month:x.month,due:x.due,paid:x.paid,remaining:x.remaining}));return l}
+          function calc(p){let l=syncInterest(p),original=loans(p).reduce((a,r)=>a+Number(r.amount),0);return{principalOriginal:original,principal:l.principal,interestPaid:l.interestPaid,interestDue:p.interestStopped?0:l.interestDue,balance:l.principal+(p.interestStopped?0:l.interestDue)}}
+          function applyInterestPayment(p,amount,until){let l=rebuildLedger(p),left=Number(amount)||0,applied=0;for(const x of l.months.filter(x=>x.month<=until)){let take=Math.min(left,Math.max(0,x.due-x.paid));x.paid+=take;left-=take;applied+=take;if(left<=0)break}return{applied,left}}
+          function payment(i){let p=data.people[i],today=new Date().toISOString().slice(0,10),month=monthKey(today),c=calc(p);modal(`<h2>ငွေပေးချေမှု</h2><div class="field"><label>ပေးချေငွေ</label><input id="payAmt" type="number" min="0" value="${c.balance}"></div><div class="field"><label>ပေးချေသည့်ရက်</label><input id="payDate" type="date" value="${today}"></div><div class="field"><label>အတိုးတွက်/ပေးမည့်လ</label><input id="payMonth" type="month" value="${month}"></div><select class="field" id="payType"><option value="both">အတိုး + အရင်း (Auto)</option><option value="interest">အတိုးသာ</option><option value="principal">အရင်းသာ</option></select><div id="interestPreview" class="mini"></div><div class="field"><label>မှတ်ချက်</label><input id="payNote"></div><button class="btn primary wide" onclick="savePayment(${i})">သိမ်းမည်</button>`);updateInterestPreview(i)}
+          function updateInterestPreview(i){let p=data.people[i],m=document.getElementById('payMonth')?.value;if(!m)return;let l=syncInterest(p),due=l.months.filter(x=>x.month<=m).reduce((a,x)=>a+Math.max(0,x.due-x.paid),0),el=document.getElementById('interestPreview');if(el)el.textContent='မပေးရသေးသော အတိုး: '+money(due)+' · '+l.months.filter(x=>x.month<=m&&x.due>x.paid).length+' လ'}
+          function savePayment(i){let amount=Number(document.getElementById('payAmt').value),p=data.people[i];if(amount<=0)return alert('ပေးချေငွေထည့်ပါ');let type=document.getElementById('payType').value,date=document.getElementById('payDate').value||new Date().toISOString().slice(0,10),month=document.getElementById('payMonth').value||monthKey(date),before=calc(p),interestApplied=0,principalApplied=0,left=amount;
+            if(type!=='principal'){let z=applyInterestPayment(p,left,month);interestApplied=z.applied;left=z.left}
+            if(type!=='interest'&&left>0){principalApplied=Math.min(left,before.principal);}
+            p.records=p.records||[];p.records.unshift({id:Date.now(),type:'payment',amount,date,month,note:document.getElementById('payNote').value,interestApplied,principalApplied});
+            save();syncInterest(p);log(p.name+' ငွေပေး '+money(amount)+' · အတိုး Auto '+money(interestApplied)+' · အရင်း '+money(principalApplied));save();closeModal();detail(i)}
+          '''
+          p.write_text(s[:start]+replacement+s[end:])
           PY
       - name: Commit patch
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git diff --cached --quiet || git commit -m 'Add automatic monthly interest allocation [interest-auto-deduct]'
+          git diff --cached --quiet || git commit -m 'Apply practical interest ledger [interest-auto-deduct]'
           git push
