@@ -1,0 +1,52 @@
+name: Fix loan date and interest summary
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[interest-summary-fixed]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch existing app safely
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html'); s=p.read_text(encoding='utf-8')
+          def replace_fn(src,name,repl):
+              m=re.search(r'function\s+'+re.escape(name)+r'\s*\([^)]*\)\s*\{',src)
+              if not m: raise SystemExit(name+' not found')
+              d=0
+              for j in range(m.end()-1,len(src)):
+                  if src[j]=='{': d+=1
+                  elif src[j]=='}':
+                      d-=1
+                      if d==0:return src[:m.start()]+repl+src[j+1:]
+              raise SystemExit(name+' boundary not found')
+          edit=r'''function editPerson(i){let p=data.people[i],ls=(p.records||[]).filter(r=>r.type==='loan'&&r.date).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))),first=ls.length?ls[0].date:(p.loanStartDate||''),last=ls.length?ls[ls.length-1].date:(p.loanLastDate||'');modal(`<h2>အချက်အလက်ပြင်ရန်</h2><div class="field"><label>အမည်</label><input id="eName" value="${esc(p.name)}"></div><div class="field"><label>ဖုန်း</label><input id="ePhone" value="${esc(p.phone)}"></div><div class="field"><label>အတိုး % / လ</label><input id="eRate" type="number" min="0" step="0.01" value="${p.rate||0}"></div><div class="field"><label>📅 ပထမဆုံးချေးခဲ့သည့်နေ့</label><input id="eLoanStart" type="date" value="${first}"></div><div class="field"><label>📅 နောက်ဆုံးချေးငွေထည့်သည့်နေ့</label><input id="eLoanLast" type="date" value="${last}"></div><div class="mini">ဒီရက်စွဲက အတိုးစတွက်မည့်ရက်ဖြစ်ပါတယ်။ သိမ်းပြီးနောက် အတိုးကို ပြန်တွက်ပါမယ်။</div><button class="btn primary wide" onclick="updatePerson(${i})">သိမ်းမည်</button>`)}'''
+          update=r'''function updatePerson(i){let p=data.people[i];p.name=document.getElementById('eName').value.trim()||p.name;p.phone=document.getElementById('ePhone').value.trim();p.rate=Number(document.getElementById('eRate').value)||0;let ls=(p.records||[]).filter(r=>r.type==='loan'&&r.date).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))),start=document.getElementById('eLoanStart')?.value||'',last=document.getElementById('eLoanLast')?.value||'';p.loanStartDate=start;p.loanLastDate=last;if(ls.length&&start)ls[0].date=start;if(ls.length&&last)ls[ls.length-1].date=last;syncInterest(p);save();log(p.name+' ချေးငွေစရက်ပြင်ပြီး အတိုးပြန်တွက်');closeModal();detail(i)}'''
+          s=replace_fn(s,'editPerson',edit); s=replace_fn(s,'updatePerson',update)
+          summary=r'''function interestSummary(p,c){let l=c.principalOriginal,months=c.interestDue>0&&p.interestMonths?p.interestMonths.filter(x=>x.due>0):[],unpaid=months.filter(x=>x.remaining>0).length,monthly=months.length?months[months.length-1].due:0;return `<section class="card"><h2>💰 အကြွေးအကျဉ်းချုပ်</h2><div class="grid"><div class="stat"><div>မူလအရင်း</div><b>${money(l)}</b></div><div class="stat interest"><div>တစ်လအတိုး</div><b>${money(monthly)}</b></div><div class="stat interest"><div>မပေးရသေးသောအတိုး</div><b>${money(c.interestDue)}</b><div class="mini">${unpaid} လ</div></div><div class="stat balance"><div>အရင်း + အတိုး စုစုပေါင်း</div><b>${money(c.balance)}</b></div></div><div class="mini" style="margin-top:8px">ဥပမာ — အရင်း 20,000 × 10% = တစ်လ 2,000။ 10 လ အတိုးမပေးထားရင် အတိုး 20,000၊ အရင်း + အတိုး = 40,000 ဖြစ်ပါတယ်။ အရင်းပေးထားခဲ့ရင် လက်ကျန်အရင်းပေါ်မူတည်ပြီး အတိုးကို ပြန်တွက်ပါတယ်။</div></section>`}'''
+          pos=s.find('function detail(')
+          if pos<0: raise SystemExit('detail not found')
+          s=s[:pos]+summary+s[pos:]
+          a=s.find('function detail('); b=s.find('function addLoan(',a)
+          block=s[a:b]
+          marker='let p=data.people[i],c=calc(p);'
+          if marker not in block: raise SystemExit('detail marker missing')
+          block=block.replace(marker,marker+'\n  '+"document.getElementById('main').dataset.summary='';",1)
+          marker2='document.getElementById(\'main\').innerHTML=`'
+          if marker2 not in block: raise SystemExit('detail html marker missing')
+          block=block.replace(marker2,"document.getElementById('main').innerHTML=interestSummary(p,c)+`",1)
+          s=s[:a]+block+s[b:]
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then echo 'No changes needed'; else git commit -m 'Fix loan start date and interest summary [interest-summary-fixed]'; git push; fi
