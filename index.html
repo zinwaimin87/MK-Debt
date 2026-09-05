@@ -84,4 +84,33 @@ data.people.forEach(syncInterest);save();dashboard();
   window.addEventListener('error',boot); if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 </script>
+<script>
+const MK_PAYMENT_EDIT_DELETE_V1=true;
+function paymentHistory(i){
+  const p=data.people[i],rs=(p.records||[]).filter(r=>r.type==='payment').slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||Number(b.id||0)-Number(a.id||0));
+  const l=rebuildLedger(p),c=calc(p);
+  modal(`<h2>${esc(p.name)} — ငွေပေးချေစာရင်း</h2><div class="grid"><div class="stat"><div>မူရင်းချေးငွေ</div><b>${money(c.principalOriginal)}</b></div><div class="stat balance"><div>လက်ကျန်အရင်း</div><b>${money(c.principal)}</b></div><div class="stat interest"><div>မပေးရသေးသောအတိုး</div><b>${money(c.interestDue)}</b></div><div class="stat"><div>စုစုပေါင်း Balance</div><b>${money(c.balance)}</b></div></div><button class="btn wide" onclick="payment(${i})">＋ ငွေပေးချေမှုအသစ်</button><div class="table"><table><thead><tr><th>ရက်</th><th>လ</th><th>ငွေပေး</th><th>အတိုး</th><th>အရင်း</th><th>အမျိုးအစား</th><th>လုပ်ဆောင်ချက်</th></tr></thead><tbody>${rs.map(r=>{let a=l.allocations[String(r.id)]||{};return `<tr><td>${esc(r.date||'')}</td><td>${esc(r.month||'')}</td><td>${money(r.amount)}</td><td>${money(a.interestApplied??r.interestApplied??0)}</td><td>${money(a.principalApplied??r.principalApplied??0)}</td><td>${r.paymentType==='interest'?'အတိုးသာ':r.paymentType==='principal'?'အရင်းသာ':'Auto'}</td><td><button class="btn" onclick="editPayment(${i},${Number(r.id)})">ပြင်</button> <button class="btn danger" onclick="deletePayment(${i},${Number(r.id)})">ဖျက်</button></td></tr>`}).join('')||'<tr><td colspan="7">ငွေပေးချေစာရင်း မရှိသေးပါ</td></tr>'}</tbody></table></div><button class="btn wide" onclick="closeModal()">ပိတ်မည်</button>`);
+}
+function editPayment(i,id){
+  const p=data.people[i],r=(p.records||[]).find(x=>Number(x.id)===Number(id));if(!r)return;
+  const type=r.paymentType||r.type||'both';
+  modal(`<h2>ငွေပေးချေမှု ပြင်ရန်</h2><div class="field"><label>ပေးချေငွေ</label><input id="epAmt" type="number" min="0" value="${Number(r.amount)||0}"></div><div class="field"><label>ပေးချေသည့်ရက်</label><input id="epDate" type="date" value="${esc(r.date||'')}"></div><div class="field"><label>အတိုးတွက်/ပေးမည့်လ</label><input id="epMonth" type="month" value="${esc(r.month||monthKey(r.date||''))}"></div><select class="field" id="epType"><option value="both" ${type==='both'?'selected':''}>အတိုး + အရင်း (Auto)</option><option value="interest" ${type==='interest'?'selected':''}>အတိုးသာ</option><option value="principal" ${type==='principal'?'selected':''}>အရင်းသာ</option></select><div class="field"><label>မှတ်ချက်</label><input id="epNote" value="${esc(r.note||'')}"></div><button class="btn primary wide" onclick="saveEditedPayment(${i},${Number(r.id)})">ပြင်ပြီးသိမ်းမည်</button><button class="btn danger wide" onclick="deletePayment(${i},${Number(r.id)})">ဒီစာရင်းကို ဖျက်မည်</button><button class="btn wide" onclick="paymentHistory(${i})">မလုပ်တော့</button>`);
+}
+function saveEditedPayment(i,id){
+  const p=data.people[i],r=(p.records||[]).find(x=>Number(x.id)===Number(id));if(!r)return;
+  const amount=Number(document.getElementById('epAmt').value);if(amount<=0)return alert('ပေးချေငွေထည့်ပါ');
+  r.amount=amount;r.date=document.getElementById('epDate').value||r.date||new Date().toISOString().slice(0,10);r.month=document.getElementById('epMonth').value||monthKey(r.date);r.paymentType=document.getElementById('epType').value;r.note=document.getElementById('epNote').value;
+  syncInterest(p);const a=rebuildLedger(p).allocations[String(r.id)]||{};r.interestApplied=a.interestApplied||0;r.principalApplied=a.principalApplied||0;r.unapplied=a.unapplied||0;
+  save();log(p.name+' ငွေပေးချေစာရင်း ပြင် '+money(amount));paymentHistory(i);
+}
+function deletePayment(i,id){
+  const p=data.people[i],r=(p.records||[]).find(x=>Number(x.id)===Number(id));if(!r)return;
+  if(!confirm('ဒီငွေပေးချေစာရင်းကို ဖျက်မလား? ဖျက်ပြီးနောက် မူရင်းချေးငွေမှ အလိုအလျောက် ပြန်တွက်ပါမည်။'))return;
+  p.records=p.records.filter(x=>Number(x.id)!==Number(id));syncInterest(p);save();log(p.name+' ငွေပေးချေစာရင်း ဖျက်');paymentHistory(i);
+}
+function payment(i){
+  let p=data.people[i],today=new Date().toISOString().slice(0,10),month=monthKey(today),c=calc(p);
+  modal(`<h2>ငွေပေးချေမှု</h2><div class="grid"><div class="stat"><div>မူရင်းချေးငွေ</div><b>${money(c.principalOriginal)}</b></div><div class="stat balance"><div>လက်ကျန်အရင်း</div><b>${money(c.principal)}</b></div><div class="stat interest"><div>အတိုးလက်ကျန်</div><b>${money(c.interestDue)}</b></div></div><div class="field"><label>ပေးချေငွေ</label><input id="payAmt" type="number" min="0" value="${c.balance}"></div><div class="field"><label>ပေးချေသည့်ရက်</label><input id="payDate" type="date" value="${today}"></div><div class="field"><label>အတိုးတွက်/ပေးမည့်လ</label><input id="payMonth" type="month" value="${month}"></div><select class="field" id="payType"><option value="both">အတိုး + အရင်း (Auto)</option><option value="interest">အတိုးသာ</option><option value="principal">အရင်းသာ</option></select><div id="interestPreview" class="mini"></div><div class="field"><label>မှတ်ချက်</label><input id="payNote"></div><button class="btn primary wide" onclick="savePayment(${i})">သိမ်းမည်</button><button class="btn wide" onclick="paymentHistory(${i})">ယခင်ငွေပေးချေစာရင်းကြည့်မည်</button>`);updateInterestPreview(i)
+}
+</script>
 </body></html>
