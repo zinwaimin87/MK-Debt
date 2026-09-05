@@ -6,7 +6,7 @@ permissions:
   contents: write
 jobs:
   patch:
-    if: "!contains(github.event.head_commit.message, '[empty-area-v2]')"
+    if: github.event.head_commit.message != 'Fix close by tapping empty area [empty-area-v2]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,7 +14,6 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          import re
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
           marker='function modal(html)'
@@ -24,7 +23,6 @@ jobs:
           end=s.find('}',pos)
           if end<0:
               raise SystemExit('modal function end not found')
-          base=s[pos:end+1]
           listener="\ndocument.addEventListener('click',function(e){const m=document.getElementById('modal');const d=document.getElementById('drawer');if(m&&m.classList.contains('show')&&e.target===m){closeModal();return}if(d&&d.classList.contains('show')&&!d.contains(e.target)&&!e.target.closest('.menu')){d.classList.remove('show');}});"
           if 'e.target===m' not in s:
               s=s[:end+1]+listener+s[end+1:]
