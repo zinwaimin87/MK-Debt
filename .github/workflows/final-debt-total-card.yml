@@ -1,0 +1,43 @@
+name: Final debt total card
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[final-total-card]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add total card without touching data
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html'); s=p.read_text(encoding='utf-8')
+          if 'id=\"finalDebtTotal\"' not in s:
+              marker="document.getElementById('main').innerHTML=`"
+              pos=s.find('function detail(i){')
+              if pos<0: raise SystemExit('detail not found')
+              end=s.find('function addLoan(',pos)
+              block=s[pos:end] if end>pos else s[pos:]
+              at=block.find(marker)
+              if at<0: raise SystemExit('detail template not found')
+              card='''<section class="card" id="finalDebtTotal"><h2>💰 အရင်း + အတိုး စုစုပေါင်း</h2><div class="grid"><div class="stat"><div>အရင်းကျန်</div><b>${money(c.principal)}</b></div><div class="stat interest"><div>အတိုးကျန်</div><b>${money(c.interestDue)}</b></div></div><div class="stat balance" style="margin-top:8px"><div>ပေးရမည့် စုစုပေါင်း (အရင်း + အတိုး)</div><b style="font-size:24px">${money(c.balance)}</b></div></section>'''
+              block=block[:at]+marker+card+block[at+len(marker):]
+              s=s[:pos]+block+s[end:]
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit safely
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Add clear principal and interest total card [final-total-card]'
+          for n in 1 2 3 4 5; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0 || true
+            git rebase --abort 2>/dev/null || true
+            sleep 2
+          done
+          exit 1
