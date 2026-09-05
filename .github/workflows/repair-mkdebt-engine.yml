@@ -5,7 +5,7 @@ on:
 
 jobs:
   repair:
-    if: ${{ !contains(github.event.head_commit.message, '[mkdebt-repair]') }}
+    if: "!contains(github.event.head_commit.message, '[mkdebt-repair]')"
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -18,28 +18,23 @@ jobs:
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
 
-          # The previous patches left a second, older interest engine later in the file.
-          # Function declarations are hoisted, so that older block was overriding the
-          # new practical ledger engine. Remove that whole duplicate block while keeping
-          # the newer edit/date UI below it.
+          # Remove the second, older interest engine. The older declarations override
+          # the newer practical ledger because JavaScript function declarations are hoisted.
           first = s.find('function monthKey(')
           second = s.find('function monthKey(', first + 1) if first >= 0 else -1
           edit = s.find('function editPerson(', second) if second >= 0 else -1
           if second >= 0 and edit >= 0:
-              replacement = """function stopInterest(i){let p=data.people[i],c=calc(p);modal(`<h2>အတိုးရပ်ပြီး စာရင်းပေါင်းရန်</h2><p>အရင်းကျန် <b>${money(c.principal)}</b></p><p>အတိုးကျန် <b>${money(c.interestDue)}</b></p><p>Total <b>${money(c.balance)}</b></p><div class=\\\"mini\\\">အတိုးရပ်ပြီးနောက် လက်ရှိအတိုးကို အရင်းထဲပေါင်းပြီး နောက်ထပ်လစဉ်အတိုးမတွက်ပါ။</div><button class=\\\"btn danger wide\\\" onclick=\\\"confirmStopInterest(${i})\\\">အတိုးရပ်ပြီး ပေါင်းမည်</button>`)}function confirmStopInterest(i){let p=data.people[i],c=calc(p);p.interestStopped=true;if(c.interestDue>0){p.records=p.records||[];p.records.push({id:Date.now(),type:'loan',amount:c.interestDue,date:new Date().toISOString().slice(0,10),note:'အတိုးရပ်ပြီး အရင်းထဲပေါင်းထားသည်'});}log(p.name+' အတိုးရပ်ပြီး '+money(c.interestDue)+' ပေါင်း');save();closeModal();detail(i)}\n"""
+              replacement = '''function stopInterest(i){let p=data.people[i],c=calc(p);modal(`<h2>အတိုးရပ်ပြီး စာရင်းပေါင်းရန်</h2><p>အရင်းကျန် <b>${money(c.principal)}</b></p><p>အတိုးကျန် <b>${money(c.interestDue)}</b></p><p>Total <b>${money(c.balance)}</b></p><div class="mini">အတိုးရပ်ပြီးနောက် လက်ရှိအတိုးကို အရင်းထဲပေါင်းပြီး နောက်ထပ်လစဉ်အတိုးမတွက်ပါ။</div><button class="btn danger wide" onclick="confirmStopInterest(${i})">အတိုးရပ်ပြီး ပေါင်းမည်</button>`)}function confirmStopInterest(i){let p=data.people[i],c=calc(p);p.interestStopped=true;if(c.interestDue>0){p.records=p.records||[];p.records.push({id:Date.now(),type:'loan',amount:c.interestDue,date:new Date().toISOString().slice(0,10),note:'အတိုးရပ်ပြီး အရင်းထဲပေါင်းထားသည်'});}log(p.name+' အတိုးရပ်ပြီး '+money(c.interestDue)+' ပေါင်း');save();closeModal();detail(i)}\n'''
               s = s[:second] + replacement + s[edit:]
 
-          # Replace the editor with a version that always shows the loan dates and also
-          # stores the dates on the person for legacy records with missing loan rows.
+          # Replace the editor so the two date fields are always present and saved.
           a = s.find('function editPerson(')
           b = s.find('function database(', a)
           if a >= 0 and b >= 0:
-              block = r'''function editPerson(i){let p=data.people[i],ls=(p.records||[]).filter(r=>r.type==='loan'&&r.date).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))),first=ls.length?ls[0].date:(p.loanStartDate||''),last=ls.length?ls[ls.length-1].date:(p.loanLastDate||'');modal(`<h2>အချက်အလက်ပြင်ရန်</h2><div class="field"><label>အမည်</label><input id="eName" value="${esc(p.name)}"></div><div class="field"><label>ဖုန်း</label><input id="ePhone" value="${esc(p.phone)}"></div><div class="field"><label>အတိုး % / လ</label><input id="eRate" type="number" min="0" step="0.01" value="${p.rate||0}"></div><div class="field"><label>📅 ပထမဆုံးချေးခဲ့သည့်နေ့</label><input id="eLoanStart" type="date" value="${first}"></div><div class="field"><label>📅 နောက်ဆုံးချေးငွေထည့်သည့်နေ့</label><input id="eLoanLast" type="date" value="${last}"></div><div class="mini">ဒီရက်စွဲ ၂ ခုကို ပြင်ပြီး သိမ်းလိုက်ရင် ချေးငွေမှတ်တမ်းနဲ့ ချိတ်ပြီး အတိုးတွက်ရက်စွဲကိုပါ ပြန်တွက်ပါမယ်။</div><button class="btn primary wide" onclick="updatePerson(${i})">သိမ်းမည်</button>`)}function updatePerson(i){let p=data.people[i];p.name=document.getElementById('eName').value.trim()||p.name;p.phone=document.getElementById('ePhone').value.trim();p.rate=Number(document.getElementById('eRate').value)||0;let ls=(p.records||[]).filter(r=>r.type==='loan'&&r.date).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))),start=document.getElementById('eLoanStart')?.value||'',last=document.getElementById('eLoanLast')?.value||'';p.loanStartDate=start;p.loanLastDate=last;if(ls.length&&start)ls[0].date=start;if(ls.length&&last)ls[ls.length-1].date=last;if(!ls.length&&start){p.records=p.records||[];let base=Number(p.principal||p.amount||0);if(base>0)p.records.push({id:Date.now(),type:'loan',amount:base,date:start,note:'Legacy loan date migrated'});}syncInterest(p);log(p.name+' အချက်အလက်နှင့် ချေးငွေရက်စွဲပြင်');save();closeModal();detail(i)}
-'''
+              block = '''function editPerson(i){let p=data.people[i],ls=(p.records||[]).filter(r=>r.type==='loan'&&r.date).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))),first=ls.length?ls[0].date:(p.loanStartDate||''),last=ls.length?ls[ls.length-1].date:(p.loanLastDate||'');modal(`<h2>အချက်အလက်ပြင်ရန်</h2><div class="field"><label>အမည်</label><input id="eName" value="${esc(p.name)}"></div><div class="field"><label>ဖုန်း</label><input id="ePhone" value="${esc(p.phone)}"></div><div class="field"><label>အတိုး % / လ</label><input id="eRate" type="number" min="0" step="0.01" value="${p.rate||0}"></div><div class="field"><label>📅 ပထမဆုံးချေးခဲ့သည့်နေ့</label><input id="eLoanStart" type="date" value="${first}"></div><div class="field"><label>📅 နောက်ဆုံးချေးငွေထည့်သည့်နေ့</label><input id="eLoanLast" type="date" value="${last}"></div><div class="mini">ရက်စွဲ ၂ ခုကို ပြင်ပြီး သိမ်းလိုက်ရင် ချေးငွေမှတ်တမ်းနဲ့ အတိုးတွက်ရက်စွဲကိုပါ ပြန်တွက်ပါမယ်။</div><button class="btn primary wide" onclick="updatePerson(${i})">သိမ်းမည်</button>`)}function updatePerson(i){let p=data.people[i];p.name=document.getElementById('eName').value.trim()||p.name;p.phone=document.getElementById('ePhone').value.trim();p.rate=Number(document.getElementById('eRate').value)||0;let ls=(p.records||[]).filter(r=>r.type==='loan'&&r.date).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))),start=document.getElementById('eLoanStart')?.value||'',last=document.getElementById('eLoanLast')?.value||'';p.loanStartDate=start;p.loanLastDate=last;if(ls.length&&start)ls[0].date=start;if(ls.length&&last)ls[ls.length-1].date=last;if(!ls.length&&start){p.records=p.records||[];let base=Number(p.principal||p.amount||0);if(base>0)p.records.push({id:Date.now(),type:'loan',amount:base,date:start,note:'Legacy loan date migrated'});}syncInterest(p);log(p.name+' အချက်အလက်နှင့် ချေးငွေရက်စွဲပြင်');save();closeModal();detail(i)}\n'''
               s = s[:a] + block + s[b:]
 
-          # Make the version unambiguous in the page header.
-          s = s.replace('<small>MK Debt · Owner</small>', '<small>MK Debt · Owner · v5</small>')
+          s = s.replace('<small>MK Debt · Owner</small>', '<small>MK Debt · Owner · v5 FIXED</small>')
           p.write_text(s, encoding='utf-8')
           PY
       - name: Commit repaired app
