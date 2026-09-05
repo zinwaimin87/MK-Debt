@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths:
       - .force-payment-edit-delete
+  pull_request_target:
+    types: [opened]
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: write
