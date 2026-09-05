@@ -23,7 +23,10 @@ jobs:
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text()
+          # Make saved paymentType drive the ledger so edits/deletes recalculate correctly.
+          s=s.replace("let left=Number(pay.amount)||0,ia=0,pa=0,type=pay.type||'both';", "let left=Number(pay.amount)||0,ia=0,pa=0,type=pay.paymentType||pay.type||'both';")
           if 'MK_PAYMENT_EDIT_DELETE_V1' in s:
+              p.write_text(s)
               raise SystemExit(0)
           js=r'''<script>
           const MK_PAYMENT_EDIT_DELETE_V1=true;
