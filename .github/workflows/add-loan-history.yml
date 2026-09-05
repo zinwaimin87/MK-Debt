@@ -16,14 +16,17 @@ jobs:
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text()
-          old="function editPerson(i){let p=data.people[i];modal(`<h2>အချက်အလက်ပြင်ရန်</h2><div class=\"field\"><label>အမည်</label><input id=\"eName\" value=\"${esc(p.name)}\"></div><div class=\"field\"><label>ဖုန်း</label><input id=\"ePhone\" value=\"${esc(p.phone)}\"></div><div class=\"field\"><label>အတိုး %</label><input id=\"eRate\" type=\"number\" value=\"${p.rate}\"></div><button class=\"btn primary wide\" onclick=\"updatePerson(${i})\">သိမ်းမည်</button>`)}"
-          new="function editPerson(i){let p=data.people[i],loans=(p.records||[]).filter(r=>r.type==='loan'),first=loans.length?loans[loans.length-1].date:'',last=loans.length?loans[0].date:'';modal(`<h2>အချက်အလက်ပြင်ရန်</h2><div class=\"field\"><label>အမည်</label><input id=\"eName\" value=\"${esc(p.name)}\"></div><div class=\"field\"><label>ဖုန်း</label><input id=\"ePhone\" value=\"${esc(p.phone)}\"></div><div class=\"field\"><label>အတိုး %</label><input id=\"eRate\" type=\"number\" value=\"${p.rate}\"></div><div class=\"field\"><label>📅 ပထမဆုံးချေးခဲ့သည့်နေ့</label><input id=\"eLoanStart\" type=\"date\" value=\"${first}\"></div><div class=\"field\"><label>📅 နောက်ဆုံးချေးငွေထည့်သည့်နေ့</label><input id=\"eLoanLast\" type=\"date\" value=\"${last}\"></div><button class=\"btn primary wide\" onclick=\"updatePerson(${i})\">သိမ်းမည်</button>`)}"
-          if old not in s: raise SystemExit('editPerson target not found')
-          s=s.replace(old,new)
-          old2="function updatePerson(i){let p=data.people[i];p.name=document.getElementById('eName').value.trim()||p.name;p.phone=document.getElementById('ePhone').value;p.rate=+document.getElementById('eRate').value||0;log(p.name+' အချက်အလက်ပြင်');save();closeModal();detail(i)}"
-          new2="function updatePerson(i){let p=data.people[i];p.name=document.getElementById('eName').value.trim()||p.name;p.phone=document.getElementById('ePhone').value;p.rate=+document.getElementById('eRate').value||0;let loans=(p.records||[]).filter(r=>r.type==='loan'),start=document.getElementById('eLoanStart').value,last=document.getElementById('eLoanLast').value;if(loans.length&&start)loans[loans.length-1].date=start;if(loans.length&&last)loans[0].date=last;log(p.name+' အချက်အလက်နှင့် ချေးငွေရက်စွဲပြင်');save();closeModal();detail(i)}"
-          if old2 not in s: raise SystemExit('updatePerson target not found')
-          s=s.replace(old2,new2)
+          a=s.find('function editPerson(')
+          b=s.find('function updatePerson(')
+          c=s.find('function deletePerson(')
+          if a<0 or b<0 or c<0 or not (a<b<c):
+              raise SystemExit('edit/update/delete function boundaries not found')
+          edit="""function editPerson(i){let p=data.people[i],loans=(p.records||[]).filter(r=>r.type==='loan').sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))),first=loans.length?loans[0].date:'',last=loans.length?loans[loans.length-1].date:'';modal(`<h2>အချက်အလက်ပြင်ရန်</h2><div class=\"field\"><label>အမည်</label><input id=\"eName\" value=\"${esc(p.name)}\"></div><div class=\"field\"><label>ဖုန်း</label><input id=\"ePhone\" value=\"${esc(p.phone)}\"></div><div class=\"field\"><label>အတိုး %</label><input id=\"eRate\" type=\"number\" value=\"${p.rate}\"></div><div class=\"field\"><label>📅 ပထမဆုံးချေးခဲ့သည့်နေ့</label><input id=\"eLoanStart\" type=\"date\" value=\"${first}\"></div><div class=\"field\"><label>📅 နောက်ဆုံးချေးငွေထည့်သည့်နေ့</label><input id=\"eLoanLast\" type=\"date\" value=\"${last}\"></div><button class=\"btn primary wide\" onclick=\"updatePerson(${i})\">သိမ်းမည်</button>`)}
+          """
+          update="""function updatePerson(i){let p=data.people[i];p.name=document.getElementById('eName').value.trim()||p.name;p.phone=document.getElementById('ePhone').value;p.rate=+document.getElementById('eRate').value||0;let loans=(p.records||[]).filter(r=>r.type==='loan').sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))),start=document.getElementById('eLoanStart')?.value,last=document.getElementById('eLoanLast')?.value;if(loans.length&&start)loans[0].date=start;if(loans.length&&last)loans[loans.length-1].date=last;log(p.name+' အချက်အလက်နှင့် ချေးငွေရက်စွဲပြင်');save();closeModal();detail(i)}
+          """
+          s=s[:a]+edit+s[b:c]
+          s=s[:s.find('function updatePerson(')]+update+s[s.find('function deletePerson('):]
           p.write_text(s)
           PY
       - name: Commit patch
@@ -31,5 +34,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git diff --cached --quiet || git commit -m 'Add loan history dates [loan-history-fixed]'
+          git diff --cached --quiet || git commit -m 'Fix loan date editing [loan-history-fixed]'
           git push
