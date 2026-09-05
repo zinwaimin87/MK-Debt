@@ -1,0 +1,45 @@
+name: Show principal plus interest total
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[total-summary-done]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add clear total summary
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html'); s=p.read_text(encoding='utf-8')
+          if 'function renderDebtSummary(' not in s:
+              helper=r'''function renderDebtSummary(i){let p=data.people[i],c=calc(p),main=document.getElementById('main');if(!main)return;let old=document.getElementById('debtTotalSummary');if(old)old.remove();let box=document.createElement('section');box.id='debtTotalSummary';box.className='card';box.innerHTML=`<h2>💰 အရင်း + အတိုး စုစုပေါင်း</h2><div class="grid"><div class="stat"><div>အရင်းကျန်</div><b>${money(c.principal)}</b></div><div class="stat interest"><div>အတိုးကျန်</div><b>${money(c.interestDue)}</b></div></div><div style="margin-top:10px;padding:12px;border:2px solid #a9812c;border-radius:10px;background:#fff8df"><div class="mini">ပေးရမည့် စုစုပေါင်း</div><strong style="font-size:24px">${money(c.balance)}</strong></div><div class="mini" style="margin-top:8px">အတိုးမပေးထားသောလများကို အလိုအလျောက်ပေါင်းထားပါတယ်။ ဥပမာ 20,000 ฿ အရင်း၊ 10% / လ ဆိုရင် တစ်လ 2,000 ฿။ 10 လ မပေးထားလျှင် အတိုး 20,000 ฿၊ အရင်း + အတိုး = 40,000 ฿။</div>`;main.prepend(box);let hs=[...main.querySelectorAll('h2')].filter(x=>x.textContent.includes('လက်ကျန်အတိုး'));for(const h of hs){let row=h.parentElement;if(row&&row.classList.contains('row')){let v=row.querySelector('[data-total-interest]')||row.lastElementChild;if(v&&v!==h){v.textContent=money(c.balance);v.setAttribute('data-total-interest','1');}}}}'''
+              marker='function detail(i){'
+              pos=s.find(marker)
+              if pos<0: raise SystemExit('detail not found')
+              s=s[:pos]+helper+'\n'+s[pos:]
+          marker="let p=data.people[i],c=calc(p);"
+          if "renderDebtSummary(i);" not in s:
+              pos=s.find(marker)
+              if pos<0: raise SystemExit('detail calc marker not found')
+              end=pos+len(marker)
+              s=s[:end]+"renderDebtSummary(i);"+s[end:]
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit with rebase safety
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Show principal plus interest total clearly [total-summary-done]'
+          for n in 1 2 3 4 5; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0 || true
+            git rebase --abort 2>/dev/null || true
+            git pull --rebase origin main || true
+          done
+          exit 1
