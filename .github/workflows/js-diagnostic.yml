@@ -1,0 +1,28 @@
+name: MK Debt JS Diagnostic
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  check:
+    if: "!contains(github.event.head_commit.message, '[diag]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re,subprocess
+          s=Path('index.html').read_text(encoding='utf-8')
+          m=re.search(r'<script>([\s\S]*?)</script>',s)
+          js=m.group(1) if m else ''
+          Path('/tmp/x.js').write_text(js,encoding='utf-8')
+          r=subprocess.run(['node','--check','/tmp/x.js'],capture_output=True,text=True)
+          Path('js-diagnostic.txt').write_text(('OK\n' if r.returncode==0 else 'FAIL\n')+r.stdout+r.stderr,encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js-diagnostic.txt
+          git commit -m 'Record JS diagnostic [diag]' || true
+          git push || true
