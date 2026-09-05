@@ -14,19 +14,26 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           p=Path('index.html')
           s=p.read_text()
-          a=s.find('function editPerson(')
-          b=s.find('function updatePerson(')
-          c=s.find('function deletePerson(')
-          if a<0 or b<0 or c<0 or not (a<b<c):
-              raise SystemExit('edit/update/delete function boundaries not found')
-          edit="""function editPerson(i){let p=data.people[i],loans=(p.records||[]).filter(r=>r.type==='loan').sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))),first=loans.length?loans[0].date:'',last=loans.length?loans[loans.length-1].date:'';modal(`<h2>အချက်အလက်ပြင်ရန်</h2><div class=\"field\"><label>အမည်</label><input id=\"eName\" value=\"${esc(p.name)}\"></div><div class=\"field\"><label>ဖုန်း</label><input id=\"ePhone\" value=\"${esc(p.phone)}\"></div><div class=\"field\"><label>အတိုး %</label><input id=\"eRate\" type=\"number\" value=\"${p.rate}\"></div><div class=\"field\"><label>📅 ပထမဆုံးချေးခဲ့သည့်နေ့</label><input id=\"eLoanStart\" type=\"date\" value=\"${first}\"></div><div class=\"field\"><label>📅 နောက်ဆုံးချေးငွေထည့်သည့်နေ့</label><input id=\"eLoanLast\" type=\"date\" value=\"${last}\"></div><button class=\"btn primary wide\" onclick=\"updatePerson(${i})\">သိမ်းမည်</button>`)}
-          """
-          update="""function updatePerson(i){let p=data.people[i];p.name=document.getElementById('eName').value.trim()||p.name;p.phone=document.getElementById('ePhone').value;p.rate=+document.getElementById('eRate').value||0;let loans=(p.records||[]).filter(r=>r.type==='loan').sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))),start=document.getElementById('eLoanStart')?.value,last=document.getElementById('eLoanLast')?.value;if(loans.length&&start)loans[0].date=start;if(loans.length&&last)loans[loans.length-1].date=last;log(p.name+' အချက်အလက်နှင့် ချေးငွေရက်စွဲပြင်');save();closeModal();detail(i)}
-          """
-          s=s[:a]+edit+s[b:c]
-          s=s[:s.find('function updatePerson(')]+update+s[s.find('function deletePerson('):]
+          edit = r'''function editPerson(i){let p=data.people[i],loans=(p.records||[]).filter(r=>r.type==='loan').slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))),first=loans.length?loans[0].date:'',last=loans.length?loans[loans.length-1].date:'';modal(`<h2>အချက်အလက်ပြင်ရန်</h2><div class="field"><label>အမည်</label><input id="eName" value="${esc(p.name)}"></div><div class="field"><label>ဖုန်း</label><input id="ePhone" value="${esc(p.phone)}"></div><div class="field"><label>အတိုး %</label><input id="eRate" type="number" value="${p.rate}"></div><div class="field"><label>📅 ပထမဆုံးချေးခဲ့သည့်နေ့</label><input id="eLoanStart" type="date" value="${first}"></div><div class="field"><label>📅 နောက်ဆုံးချေးငွေထည့်သည့်နေ့</label><input id="eLoanLast" type="date" value="${last}"></div><button class="btn primary wide" onclick="updatePerson(${i})">သိမ်းမည်</button>`)}'''
+          update = r'''function updatePerson(i){let p=data.people[i];p.name=document.getElementById('eName').value.trim()||p.name;p.phone=document.getElementById('ePhone').value;p.rate=+document.getElementById('eRate').value||0;let loans=(p.records||[]).filter(r=>r.type==='loan').slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))),start=document.getElementById('eLoanStart')?.value,last=document.getElementById('eLoanLast')?.value;if(loans.length&&start)loans[0].date=start;if(loans.length&&last)loans[loans.length-1].date=last;log(p.name+' အချက်အလက်နှင့် ချေးငွေရက်စွဲပြင်');save();closeModal();detail(i)}'''
+          def replace_function(src, name, replacement):
+              pat=re.compile(r'function\s+'+re.escape(name)+r'\s*\([^)]*\)\s*\{')
+              m=pat.search(src)
+              if not m: raise SystemExit(name+' function not found')
+              depth=0; end=None
+              for j in range(m.end()-1,len(src)):
+                  if src[j]=='{': depth+=1
+                  elif src[j]=='}':
+                      depth-=1
+                      if depth==0:
+                          end=j+1; break
+              if end is None: raise SystemExit(name+' function boundary not found')
+              return src[:m.start()]+replacement+src[end:]
+          s=replace_function(s,'editPerson',edit)
+          s=replace_function(s,'updatePerson',update)
           p.write_text(s)
           PY
       - name: Commit patch
@@ -34,5 +41,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git diff --cached --quiet || git commit -m 'Fix loan date editing [loan-history-fixed]'
+          git diff --cached --quiet || git commit -m 'Add editable loan dates [loan-history-fixed]'
           git push
