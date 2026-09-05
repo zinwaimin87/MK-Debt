@@ -1,0 +1,36 @@
+name: Close dialogs by tapping empty area
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[close-empty-area]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add outside-tap close behavior
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          old="function modal(html){document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').classList.add('show')}"
+          new="function modal(html){document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').classList.add('show')}\ndocument.addEventListener('click',function(e){let modalEl=document.getElementById('modal'),box=document.getElementById('modalBox'),drawer=document.getElementById('drawer');if(modalEl&&modalEl.classList.contains('show')&&e.target===modalEl){closeModal();return}if(drawer&&drawer.classList.contains('show')&&!drawer.contains(e.target)&&!e.target.closest('.menu')){drawer.classList.remove('show')}})"
+          if old not in s:
+              raise SystemExit('modal function not found')
+          if "e.target===modalEl" not in s:
+              s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Close dialogs when tapping empty area [close-empty-area]'
+          git pull --rebase origin main
+          git push origin HEAD:main
