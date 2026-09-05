@@ -5,6 +5,7 @@ on:
     paths:
       - index.html
       - .github/workflows/payment-edit-delete.yml
+      - .payment-edit-delete-trigger
   pull_request_target:
     types: [opened]
     branches: [main]
