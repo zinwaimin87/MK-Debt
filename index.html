@@ -59,4 +59,29 @@ function payable(){document.getElementById('pageTitle').textContent='ပေး�
 function installment(){document.getElementById('pageTitle').textContent='အရစ်ကျ';document.getElementById('main').innerHTML=`<section class="card"><h2>အရစ်ကျ</h2><button class="btn primary wide" onclick="newInstallment()">＋ အရစ်ကျစာချုပ်ထည့်ရန်</button></section><section class="card">${data.installments.map(x=>`<div class="person"><div class="avatar">▦</div><div><b>${esc(x.name)}</b><div class="mini">${x.paidCount||0}/${x.count} ကြိမ်</div></div><div class="amount">${money(x.total-x.paid)}</div></div>`).join('')||'<p class="mini">မှတ်တမ်းမရှိသေးပါ</p>'}</section>`}function newInstallment(){modal(`<h2>အရစ်ကျထည့်ရန်</h2><div class="field"><label>အမည်</label><input id="in"></div><div class="field"><label>စုစုပေါင်း</label><input id="it" type="number"></div><div class="field"><label>အကြိမ်ရေ</label><input id="ic" type="number" value="10"></div><button class="btn primary wide" onclick="saveInstallment()">သိမ်းမည်</button>`)}function saveInstallment(){let n=document.getElementById('in').value.trim(),t=Number(document.getElementById('it').value),c=Number(document.getElementById('ic').value);if(!n||t<=0||c<=0)return;data.installments.push({id:Date.now(),name:n,total:t,count:c,paid:0,paidCount:0});log(n+' အရစ်ကျစာချုပ်ထည့်');save();closeModal();installment()}
 function salary(){document.getElementById('pageTitle').textContent='Salary';document.getElementById('main').innerHTML=`<section class="card"><h2>26/08/2026 — 25/09/2026</h2><p class="mini">လစာစာရင်း</p></section><section class="card">${data.salary.map(s=>`<div class="person"><div class="avatar">฿</div><div><b>${esc(s.name)}</b><div class="mini">${s.days||0} days · Expense ${money(s.expense||0)}</div></div><div class="amount">${money(s.wage)}</div></div>`).join('')}</section>`}function chat(){document.getElementById('pageTitle').textContent='Chat';document.getElementById('main').innerHTML=`<section class="card"><h2>Chat</h2>${data.messages.map(m=>`<div class="person"><div class="avatar">💬</div><div><b>${esc(m.name)}</b><div>${esc(m.text)}</div><div class="mini">${esc(m.time)}</div></div></div>`).join('')||'<p class="mini">Message မရှိသေးပါ</p>'}<div class="field"><input id="msg" placeholder="Message ရေးပါ..." onkeydown="if(event.key==='Enter')sendMsg()"></div><button class="btn primary wide" onclick="sendMsg()">ပို့မည်</button></section>`}function sendMsg(){let x=document.getElementById('msg').value.trim();if(!x)return;data.messages.push({name:'Owner',text:x,time:new Date().toLocaleString()});save();chat()}
 data.people.forEach(syncInterest);save();dashboard();
-</script></body></html>
+</script><script>
+(function(){
+  const boot='MK_DEBT_BOOT_RECOVERY_V1';
+  function renderFallback(){
+    const m=document.getElementById('main'); if(!m) return;
+    let d={people:[]};
+    try{d=JSON.parse(localStorage.getItem('mk-debt-v4')||'null')||d}catch(e){}
+    const people=Array.isArray(d.people)?d.people:[];
+    const money=n=>Number(n||0).toLocaleString()+' ฿';
+    const calc=p=>{
+      let principal=0,interest=0;
+      (p.records||[]).forEach(r=>{if(r.type==='loan')principal+=Number(r.amount)||0;if(r.type==='payment'){let a=Number(r.amount)||0;interest+=Math.min(a,principal*(Number(p.rate)||0)/100);principal=Math.max(0,principal-a)}});
+      return {principal,interest};
+    };
+    let totalP=0,totalI=0; people.forEach(p=>{let c=calc(p);totalP+=c.principal;totalI+=c.interest});
+    m.innerHTML='<div class="card green"><div>စုစုပေါင်း လက်ကျန်အရင်း</div><strong>'+money(totalP)+'</strong><div>အတိုးနှင့် စီမံထားသော အကြွေးစာရင်း</div></div>'+
+      '<div class="grid"><div class="stat"><div>လူဦးရေ</div><b>'+people.length+'</b></div><div class="stat interest"><div>အတိုး</div><b>'+money(totalI)+'</b></div></div>'+
+      '<div class="card"><div class="row"><b>ရရန်အကြွေး</b><button class="btn primary" onclick="window.showPage&&showPage(\'receivable\')">ကြည့်မည်</button></div>'+
+      people.map(p=>{let c=calc(p);return '<div class="person"><div class="avatar">'+String(p.name||'?').slice(0,1)+'</div><div><b>'+String(p.name||'အမည်မရှိ')+'</b><div class="mini">အတိုး '+(Number(p.rate)||0)+'%</div></div><div class="amount">'+money(c.principal)+'</div></div>'}).join('')+'</div>'+
+      '<div class="card"><b>MK Debt</b><div class="mini">Dashboard ကို ပြန်လည်ဖော်ပြထားပါသည်။ သင့်ရှိပြီးသား local data ကို မဖျက်ပါ။</div></div>';
+  }
+  function boot(){setTimeout(function(){const m=document.getElementById('main');if(m&&(!m.innerHTML.trim()||m.innerText.trim().length<10))renderFallback()},120)}
+  window.addEventListener('error',boot); if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
+</script>
+</body></html>
