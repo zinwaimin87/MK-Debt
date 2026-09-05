@@ -1,0 +1,32 @@
+name: Fix current JS syntax
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[syntax-fix]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix malformed listener separator
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          old="})function log(x)"
+          new="});function log(x)"
+          if old not in s:
+              raise SystemExit('Expected malformed listener separator was not found')
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Fix JavaScript syntax [syntax-fix]'
+          git push origin HEAD:main
