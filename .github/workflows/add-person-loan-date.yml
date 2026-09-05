@@ -6,7 +6,7 @@ permissions:
   contents: write
 jobs:
   patch:
-    if: "!contains(github.event.head_commit.message, '[new-person-date]')"
+    if: "!contains(github.event.head_commit.message, '[new-person-date-done]')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +38,6 @@ jobs:
       - name: Commit patch
         run: |
           git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.email '41898282+github-actions[bot].users.noreply.github.com'
           git add index.html
-          if git diff --cached --quiet; then echo 'No changes needed'; else git commit -m 'Add loan dates to new person form [new-person-date]'; git push; fi
+          if git diff --cached --quiet; then echo 'No changes needed'; else git commit -m 'Add loan dates to new person form [new-person-date-done]'; git push; fi
