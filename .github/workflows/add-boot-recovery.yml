@@ -1,0 +1,52 @@
+name: MK Debt Boot Recovery
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[boot-recovery]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add safe dashboard boot
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html'); s=p.read_text(encoding='utf-8')
+          marker='MK_DEBT_BOOT_RECOVERY_V1'
+          if marker in s: raise SystemExit('already patched')
+          script=r'''<script>
+          (function(){
+            const boot='MK_DEBT_BOOT_RECOVERY_V1';
+            function renderFallback(){
+              const m=document.getElementById('main'); if(!m) return;
+              let d={people:[]};
+              try{d=JSON.parse(localStorage.getItem('mk-debt-v4')||'null')||d}catch(e){}
+              const people=Array.isArray(d.people)?d.people:[];
+              const money=n=>Number(n||0).toLocaleString()+' ฿';
+              const calc=p=>{
+                let principal=0,interest=0;
+                (p.records||[]).forEach(r=>{if(r.type==='loan')principal+=Number(r.amount)||0;if(r.type==='payment'){let a=Number(r.amount)||0;interest+=Math.min(a,principal*(Number(p.rate)||0)/100);principal=Math.max(0,principal-a)}});
+                return {principal,interest};
+              };
+              let totalP=0,totalI=0; people.forEach(p=>{let c=calc(p);totalP+=c.principal;totalI+=c.interest});
+              m.innerHTML='<div class="card green"><div>စုစုပေါင်း လက်ကျန်အရင်း</div><strong>'+money(totalP)+'</strong><div>အတိုးနှင့် စီမံထားသော အကြွေးစာရင်း</div></div>'+
+                '<div class="grid"><div class="stat"><div>လူဦးရေ</div><b>'+people.length+'</b></div><div class="stat interest"><div>အတိုး</div><b>'+money(totalI)+'</b></div></div>'+
+                '<div class="card"><div class="row"><b>ရရန်အကြွေး</b><button class="btn primary" onclick="window.showPage&&showPage(\'receivable\')">ကြည့်မည်</button></div>'+
+                people.map(p=>{let c=calc(p);return '<div class="person"><div class="avatar">'+String(p.name||'?').slice(0,1)+'</div><div><b>'+String(p.name||'အမည်မရှိ')+'</b><div class="mini">အတိုး '+(Number(p.rate)||0)+'%</div></div><div class="amount">'+money(c.principal)+'</div></div>'}).join('')+'</div>'+
+                '<div class="card"><b>MK Debt</b><div class="mini">Dashboard ကို ပြန်လည်ဖော်ပြထားပါသည်။ သင့်ရှိပြီးသား local data ကို မဖျက်ပါ။</div></div>';
+            }
+            function boot(){setTimeout(function(){const m=document.getElementById('main');if(m&&(!m.innerHTML.trim()||m.innerText.trim().length<10))renderFallback()},120)}
+            window.addEventListener('error',boot); if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+          })();
+          </script>'''
+          s=s.replace('</body>',script+'\n</body>',1)
+          p.write_text(s,encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Add safe dashboard boot recovery [boot-recovery]'
+          git push
