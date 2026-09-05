@@ -1,0 +1,24 @@
+name: MK Debt JS Check Now
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re, subprocess
+          s=Path('index.html').read_text(encoding='utf-8')
+          m=re.search(r'<script>([\s\S]*?)</script>',s)
+          Path('/tmp/mk.js').write_text(m.group(1) if m else '',encoding='utf-8')
+          r=subprocess.run(['node','--check','/tmp/mk.js'],capture_output=True,text=True)
+          print('JS_CHECK_RC=',r.returncode)
+          print(r.stdout)
+          print(r.stderr)
+          raise SystemExit(r.returncode)
