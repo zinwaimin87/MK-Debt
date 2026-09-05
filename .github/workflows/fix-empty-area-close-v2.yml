@@ -1,0 +1,41 @@
+name: Fix close by tapping empty area v2
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[empty-area-v2]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch modal and drawer close behavior
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          marker='function modal(html)'
+          pos=s.find(marker)
+          if pos<0:
+              raise SystemExit('modal function not found')
+          end=s.find('}',pos)
+          if end<0:
+              raise SystemExit('modal function end not found')
+          base=s[pos:end+1]
+          listener="\ndocument.addEventListener('click',function(e){const m=document.getElementById('modal');const d=document.getElementById('drawer');if(m&&m.classList.contains('show')&&e.target===m){closeModal();return}if(d&&d.classList.contains('show')&&!d.contains(e.target)&&!e.target.closest('.menu')){d.classList.remove('show');}});"
+          if 'e.target===m' not in s:
+              s=s[:end+1]+listener+s[end+1:]
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then echo 'No changes needed'; exit 0; fi
+          git commit -m 'Fix close by tapping empty area [empty-area-v2]'
+          git pull --rebase origin main
+          git push origin HEAD:main
