@@ -1,0 +1,25 @@
+name: Check MK Debt JavaScript
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text(encoding='utf-8')
+          m=re.search(r'<script>([\s\S]*?)</script>',s)
+          if not m:
+              raise SystemExit('No script block found')
+          Path('/tmp/mkdebt.js').write_text(m.group(1),encoding='utf-8')
+          PY
+          node --check /tmp/mkdebt.js
+          echo 'MK Debt JavaScript syntax OK'
