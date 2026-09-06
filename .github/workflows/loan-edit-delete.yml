@@ -1,0 +1,62 @@
+name: Per-loan edit delete
+on:
+  push:
+    branches: [main]
+    paths:
+      - .force-loan-edit-delete
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install per-loan edit/delete controls
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          s=s.replace("let due=p.interestStopped?0:principal*(Number(p.rate)||0)/100;", "let activeRate=ls.filter(x=>monthKey(x.date)===cur).reduce((a,x)=>a+0,Number(p.rate)||0); let due=p.interestStopped?0:principal*activeRate/100;")
+          s=s.replace("p.records.push({id:Date.now(),type:'loan',amount:a,date:document.getElementById('loanDate').value||new Date().toISOString().slice(0,10),note:document.getElementById('loanNote').value});", "p.records.push({id:Date.now(),type:'loan',amount:a,date:document.getElementById('loanDate').value||new Date().toISOString().slice(0,10),rate:Number(document.getElementById('loanRate').value)||0,note:document.getElementById('loanNote').value});")
+          if 'MK_LOAN_EDIT_DELETE_V1' in s:
+              print('already installed')
+              raise SystemExit(0)
+          js=r'''<script>
+          const MK_LOAN_EDIT_DELETE_V1=true;
+          function loanHistory(i){
+            const p=data.people[i],ls=loans(p),c=calc(p);
+            modal(`<h2>${esc(p.name)} — ချေးငွေစာရင်း</h2><div class="grid"><div class="stat"><div>မူရင်းချေးငွေ</div><b>${money(c.principalOriginal)}</b></div><div class="stat balance"><div>လက်ကျန်အရင်း</div><b>${money(c.principal)}</b></div></div><button class="btn primary wide" onclick="addLoan(${i})">＋ ချေးငွေအသစ်ထည့်</button><div class="table"><table><thead><tr><th>ရက်</th><th>ချေးငွေ</th><th>အတိုး %</th><th>မှတ်ချက်</th><th>လုပ်ဆောင်ချက်</th></tr></thead><tbody>${ls.map(r=>`<tr><td>${esc(r.date||'')}</td><td>${money(r.amount)}</td><td>${Number(r.rate??p.rate??0)}%</td><td>${esc(r.note||'')}</td><td><button class="btn" onclick="editLoan(${i},${Number(r.id)})">ပြင်</button> <button class="btn danger" onclick="deleteLoan(${i},${Number(r.id)})">ဖျက်</button></td></tr>`).join('')||'<tr><td colspan="5">ချေးငွေစာရင်း မရှိသေးပါ</td></tr>'}</tbody></table></div><button class="btn wide" onclick="closeModal()">ပိတ်မည်</button>`);
+          }
+          function editLoan(i,id){
+            const p=data.people[i],r=(p.records||[]).find(x=>x.type==='loan'&&Number(x.id)===Number(id));if(!r)return;
+            modal(`<h2>ချေးငွေစာရင်း ပြင်ရန်</h2><div class="field"><label>ချေးငွေအရင်း</label><input id="elAmt" type="number" min="0" step="0.01" value="${Number(r.amount)||0}"></div><div class="field"><label>ချေးသည့်ရက်</label><input id="elDate" type="date" value="${esc(r.date||'')}"></div><div class="field"><label>အတိုး % / လ</label><input id="elRate" type="number" min="0" step="0.01" value="${Number(r.rate??p.rate??0)}"></div><div class="field"><label>မှတ်ချက်</label><input id="elNote" value="${esc(r.note||'')}"></div><button class="btn primary wide" onclick="saveEditedLoan(${i},${Number(r.id)})">ပြင်ပြီးသိမ်းမည်</button><button class="btn danger wide" onclick="deleteLoan(${i},${Number(r.id)})">ဒီချေးငွေကို ဖျက်မည်</button><button class="btn wide" onclick="loanHistory(${i})">မလုပ်တော့</button>`);
+          }
+          function saveEditedLoan(i,id){
+            const p=data.people[i],r=(p.records||[]).find(x=>x.type==='loan'&&Number(x.id)===Number(id));if(!r)return;
+            const amount=Number(document.getElementById('elAmt').value);if(amount<=0)return alert('ချေးငွေပမာဏထည့်ပါ');
+            r.amount=amount;r.date=document.getElementById('elDate').value||r.date;r.rate=Number(document.getElementById('elRate').value)||0;r.note=document.getElementById('elNote').value;
+            syncInterest(p);save();log(p.name+' ချေးငွေစာရင်း ပြင် '+money(amount));loanHistory(i);
+          }
+          function deleteLoan(i,id){
+            const p=data.people[i],r=(p.records||[]).find(x=>x.type==='loan'&&Number(x.id)===Number(id));if(!r)return;
+            if(!confirm('ဒီချေးငွေစာရင်းကို ဖျက်မလား? ဖျက်ပြီးနောက် အတိုး၊ အရင်းလက်ကျန်၊ ငွေပေးချေမှုဆိုင်ရာ စာရင်းများကို မူရင်းချေးငွေအပေါ် အလိုအလျောက် ပြန်တွက်ပါမည်။'))return;
+            p.records=p.records.filter(x=>Number(x.id)!==Number(id));syncInterest(p);save();log(p.name+' ချေးငွေစာရင်း ဖျက် '+money(r.amount));loanHistory(i);
+          }
+          const _mkLoanDetail=detail;
+          detail=function(i){
+            _mkLoanDetail(i);
+            const main=document.getElementById('main');
+            if(!main)return;
+            const card=document.createElement('section');card.className='card';card.innerHTML='<h2>ချေးငွေတစ်ဦးချင်းစာရင်း</h2><div class="mini">ချေးငွေတစ်စောင်ချင်းစီကို ပြင်နိုင်၊ ဖျက်နိုင်ပြီး ဖျက်/ပြင်ပြီးနောက် အတိုးနဲ့ Balance ကို Auto ပြန်တွက်ပေးပါမယ်။</div><button class="btn primary wide" onclick="loanHistory('+i+')">ချေးငွေစာရင်း ပြင် / ဖျက်</button>';main.appendChild(card);
+          };
+          </script>'''
+          s=s.replace('</body>',js+'\n</body>')
+          p.write_text(s)
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html
+          git commit -m 'Install per-loan edit delete controls'
+          git push origin main
