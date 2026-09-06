@@ -20,7 +20,7 @@ function rebuildLedger(p){
     let item={month:cur,due,paid:0,remaining:due,principalStart:principal,principalEnd:principal};
     if(due>0)queue.push(item);
     for(const pay of ps.filter(x=>(x.month||monthKey(x.date||''))===cur)){
-      let left=Number(pay.amount)||0,ia=0,pa=0,type=pay.type||'both';
+      let left=Number(pay.amount)||0,ia=0,pa=0,type=pay.paymentType||pay.type||'both';
       if(type!=='principal'&&!p.interestStopped){
         for(const q of queue){if(left<=0)break;let need=Math.max(0,q.due-q.paid),take=Math.min(left,need);q.paid+=take;q.remaining=Math.max(0,q.due-q.paid);left-=take;ia+=take}
       }
