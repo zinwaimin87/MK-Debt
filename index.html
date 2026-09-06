@@ -16,7 +16,7 @@ function rebuildLedger(p){
   let first=monthKey(ls[0].date),last=monthKey(new Date()),cur=first,principal=0,interestPaid=0,principalPaid=0,months=[],queue=[],allocations={};
   while(cur<=last){
     for(const l of ls.filter(x=>monthKey(x.date)===cur))principal+=Number(l.amount)||0;
-    let activeRate=ls.filter(x=>monthKey(x.date)===cur).reduce((a,x)=>a+0,Number(p.rate)||0); let due=p.interestStopped?0:principal*activeRate/100;
+    let due=p.interestStopped?0:principal*(Number(p.rate)||0)/100;
     let item={month:cur,due,paid:0,remaining:due,principalStart:principal,principalEnd:principal};
     if(due>0)queue.push(item);
     for(const pay of ps.filter(x=>(x.month||monthKey(x.date||''))===cur)){
