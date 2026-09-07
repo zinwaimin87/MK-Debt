@@ -1,0 +1,36 @@
+name: Calculation Step 1
+on:
+  push:
+    branches: [main]
+    paths:
+      - .force-calculation-step1
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix payment type allocation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          old="let left=Number(pay.amount)||0,ia=0,pa=0,type=pay.type||'both';"
+          new="let left=Number(pay.amount)||0,ia=0,pa=0,type=pay.paymentType||pay.type||'both';"
+          if old not in s:
+              print('target not found; stopping without changes')
+              raise SystemExit(0)
+          s=s.replace(old,new,1)
+          marker='const MK_CALCULATION_STEP1=true;'
+          if marker not in s:
+              s=s.replace('<script>', '<script>\n'+marker, 1)
+          p.write_text(s,encoding='utf-8')
+          print('Calculation Step 1 installed')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then echo 'No changes'; else git commit -m 'Fix payment type allocation engine [calculation-step1]'; git push origin main; fi
