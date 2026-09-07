@@ -1,0 +1,64 @@
+name: Payment Hotfix
+on:
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - .github/workflows/payment-hotfix.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add standalone payment handler
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if '__MK_PAYMENT_HOTFIX__' in s:
+              raise SystemExit(0)
+          js=r'''<script>
+          (function(){
+            if(window.__MK_PAYMENT_HOTFIX__) return; window.__MK_PAYMENT_HOTFIX__=true;
+            const KEY='mk-debt-live-v2';
+            const num=x=>Number(x)||0;
+            const today=()=>new Date().toISOString().slice(0,10);
+            const money=(n,c)=>num(n).toLocaleString()+' '+c;
+            const esc=x=>String(x??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[m]));
+            function load(){try{let d=JSON.parse(localStorage.getItem(KEY)||'null');if(!d||!Array.isArray(d.people))d={rate:10,currency:'MMK',people:[],payments:[]};if(!Array.isArray(d.payments))d.payments=[];return d}catch(e){return {rate:10,currency:'MMK',people:[],payments:[]}}}
+            function save(d){localStorage.setItem(KEY,JSON.stringify(d));}
+            function months(p){let a=new Date((p.date||today())+'T00:00:00'),b=new Date();return Math.max(0,(b.getFullYear()-a.getFullYear())*12+b.getMonth()-a.getMonth())}
+            function dueInterest(d,p){if(p.stop)return 0;let paid=d.payments.filter(x=>x.pid===p.id).reduce((s,x)=>s+num(x.interest),0);return Math.max(0,num(p.amount)*num(p.rate)/100*months(p)-paid)}
+            function principalPaid(d,p){return d.payments.filter(x=>x.pid===p.id).reduce((s,x)=>s+num(x.principal),0)}
+            function bal(d,p){return Math.max(0,num(p.amount)-principalPaid(d,p)+dueInterest(d,p))}
+            window.pay=function(id){
+              const d=load(),p=d.people.find(x=>String(x.id)===String(id)); if(!p)return;
+              const interest=Math.min(bal(d,p),dueInterest(d,p));
+              const def=Math.min(bal(d,p),num(p.monthly)||interest||bal(d,p));
+              const pr=Math.max(0,def-interest);
+              const host=document.getElementById('detail')||document.getElementById('payments'); if(!host)return;
+              host.innerHTML='<div class="card"><div class="row"><h2>💳 '+esc(p.name)+'</h2><button class="btn" type="button" onclick="location.reload()">←</button></div><div class="card"><div class="muted">လက်ကျန်</div><div class="big">'+money(bal(d,p),p.currency)+'</div></div><div class="field"><label>ပေးချေငွေ *</label><input id="mkpa" type="number" inputmode="decimal" min="0" value="'+(def||'')+'"></div><div class="field"><label>အတိုး</label><input id="mkpi" type="number" inputmode="decimal" min="0" value="'+interest+'"></div><div class="field"><label>အရင်း</label><input id="mkpp" type="number" inputmode="decimal" min="0" value="'+pr+'"></div><button type="button" class="btn green" id="mkSavePay">✓ Save Payment</button><button type="button" class="btn" onclick="location.reload()">Cancel</button></div>';
+              const sync=function(){let a=Math.min(bal(d,p),num(document.getElementById('mkpa')?.value));let i=Math.min(a,Math.max(0,num(document.getElementById('mkpi')?.value)));let pp=document.getElementById('mkpp');if(pp)pp.value=Math.max(0,a-i)};
+              document.getElementById('mkpa')?.addEventListener('input',sync);document.getElementById('mkpi')?.addEventListener('input',sync);sync();
+              document.getElementById('mkSavePay')?.addEventListener('click',function(){
+                let a=num(document.getElementById('mkpa')?.value),i=num(document.getElementById('mkpi')?.value),pr=num(document.getElementById('mkpp')?.value);
+                if(a<=0){alert('ပေးချေငွေထည့်ပါ');return} if(i+pr>a){alert('အတိုး + အရင်း စုစုပေါင်းသည် ပေးချေငွေထက် မကျော်ရပါ');return}
+                if(i+pr>bal(d,p)){alert('ပေးချေငွေသည် လက်ကျန်ထက် မကျော်ရပါ');return}
+                d.payments.push({id:'q'+Date.now(),pid:p.id,amount:a,interest:i,principal:pr,date:today()});save(d);location.reload();
+              });
+            };
+          })();
+          </script>'''
+          s=s.replace('<script>',js+'\n<script>',1)
+          p.write_text(s)
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Add standalone payment hotfix [payment-hotfix]'
+          git push origin main
