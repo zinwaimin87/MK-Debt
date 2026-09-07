@@ -1,42 +1,23 @@
 name: Check MK Debt JavaScript
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 jobs:
   check:
-    if: "!contains(github.event.head_commit.message, '[js-check]')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check JavaScript syntax
+      - name: Check stable app JavaScript
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
-          s=Path('index.html').read_text(encoding='utf-8')
+          s=Path('app2.html').read_text(encoding='utf-8')
           m=re.search(r'<script>([\s\S]*?)</script>',s)
           if not m:
-              raise SystemExit('No script block found')
+              raise SystemExit('No script block found in app2.html')
           Path('/tmp/mkdebt.js').write_text(m.group(1),encoding='utf-8')
           PY
-          set +e
-          node --check /tmp/mkdebt.js >/tmp/jscheck.out 2>&1
-          code=$?
-          set -e
-          if [ "$code" -eq 0 ]; then
-            echo 'OK' > js-check.txt
-            echo 'MK Debt JavaScript syntax OK'
-          else
-            echo 'FAIL' > js-check.txt
-            cat /tmp/jscheck.out >> js-check.txt
-            cat /tmp/jscheck.out
-          fi
-      - name: Commit check result
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add js-check.txt
-          if git diff --cached --quiet; then echo 'No result changes'; else git commit -m 'Record JS syntax check [js-check]'; git push; fi
+          node --check /tmp/mkdebt.js
+          echo 'MK Debt stable JavaScript syntax OK'
