@@ -1,0 +1,72 @@
+name: Step 4 overpayment handling
+on:
+  push:
+    branches: [main]
+    paths:
+      - .force-overpayment
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add overpayment visibility
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          if 'MK_OVERPAYMENT_V1' in s:
+              print('already installed')
+              raise SystemExit(0)
+          js=r'''<script>
+          const MK_OVERPAYMENT_V1=true;
+          function overpaymentTotal(p){return (p.records||[]).filter(r=>r.type==='payment').reduce((a,r)=>a+Number(r.unapplied||0),0)}
+          function showOverpayment(i){
+            const p=data.people[i],n=overpaymentTotal(p);
+            if(n>0)modal('<h2>ပိုငွေ / မသတ်မှတ်ရသေးငွေ</h2><div class="card"><b>'+money(n)+'</b><div class="mini">ဒီငွေကို အတိုး/အရင်းထဲ မသတ်မှတ်ရသေးပါ။ နောက်ငွေပေးချေမှုတွင် အလိုအလျောက် မနှုတ်ပါ။</div></div><button class="btn wide" onclick="closeModal()">ပိတ်မည်</button>');
+            else alert('ပိုငွေ မရှိပါ');
+          }
+          function detail(i){
+            const oldDetail=window.__mkOriginalDetail;
+            if(oldDetail){oldDetail(i);return;}
+          }
+          </script>'''
+          # Do not override detail; instead add a small global helper and enhance payment history labels.
+          js=r'''<script>
+          const MK_OVERPAYMENT_V1=true;
+          function overpaymentTotal(p){return (p.records||[]).filter(r=>r.type==='payment').reduce((a,r)=>a+Number(r.unapplied||0),0)}
+          function showOverpayment(i){
+            const p=data.people[i],n=overpaymentTotal(p);
+            if(n>0)modal('<h2>ပိုငွေ / မသတ်မှတ်ရသေးငွေ</h2><div class="card"><strong>'+money(n)+'</strong><div class="mini">ဒီငွေကို အတိုး/အရင်းထဲ မသတ်မှတ်ရသေးပါ။</div></div><button class="btn wide" onclick="closeModal()">ပိတ်မည်</button>');
+            else alert('ပိုငွေ မရှိပါ');
+          }
+          function paymentOverpaymentBadge(i){
+            const n=overpaymentTotal(data.people[i]);
+            return n>0?'<div class="card" style="border-left:4px solid #a86d4c"><b>⚠️ ပိုငွေ / မသတ်မှတ်ရသေး</b><br><strong>'+money(n)+'</strong><br><button class="btn" onclick="showOverpayment('+i+')">အသေးစိတ်</button></div>':'';
+          }
+          const __mkDetailForOverpayment=window.detail;
+          if(typeof __mkDetailForOverpayment==='function'){
+            window.detail=function(i){
+              __mkDetailForOverpayment(i);
+              const main=document.getElementById('main');
+              if(main && !document.getElementById('mkOverpaymentCard')){
+                const n=overpaymentTotal(data.people[i]);
+                if(n>0){
+                  const card=document.createElement('div');card.id='mkOverpaymentCard';card.className='card';
+                  card.innerHTML='<b>⚠️ ပိုငွေ / မသတ်မှတ်ရသေး</b><br><strong>'+money(n)+'</strong><br><span class="mini">အတိုး/အရင်းထဲ မသတ်မှတ်ရသေးသော ပေးချေငွေ</span>';
+                  main.insertBefore(card,main.firstChild);
+                }
+              }
+            }
+          }
+          </script>'''
+          s=s.replace('</body>',js+'\n</body>',1)
+          p.write_text(s,encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then echo 'No changes'; else git commit -m 'Show unapplied overpayment clearly'; git push origin main; fi
