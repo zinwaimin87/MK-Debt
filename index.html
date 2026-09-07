@@ -210,4 +210,32 @@ const MK_PAYMENT_ONLY_EDIT_DELETE_V2=true;
   };
 })();
 </script>
+<script>
+const MK_OVERPAYMENT_V1=true;
+function overpaymentTotal(p){return (p.records||[]).filter(r=>r.type==='payment').reduce((a,r)=>a+Number(r.unapplied||0),0)}
+function showOverpayment(i){
+  const p=data.people[i],n=overpaymentTotal(p);
+  if(n>0)modal('<h2>ပိုငွေ / မသတ်မှတ်ရသေးငွေ</h2><div class="card"><strong>'+money(n)+'</strong><div class="mini">ဒီငွေကို အတိုး/အရင်းထဲ မသတ်မှတ်ရသေးပါ။</div></div><button class="btn wide" onclick="closeModal()">ပိတ်မည်</button>');
+  else alert('ပိုငွေ မရှိပါ');
+}
+function paymentOverpaymentBadge(i){
+  const n=overpaymentTotal(data.people[i]);
+  return n>0?'<div class="card" style="border-left:4px solid #a86d4c"><b>⚠️ ပိုငွေ / မသတ်မှတ်ရသေး</b><br><strong>'+money(n)+'</strong><br><button class="btn" onclick="showOverpayment('+i+')">အသေးစိတ်</button></div>':'';
+}
+const __mkDetailForOverpayment=window.detail;
+if(typeof __mkDetailForOverpayment==='function'){
+  window.detail=function(i){
+    __mkDetailForOverpayment(i);
+    const main=document.getElementById('main');
+    if(main && !document.getElementById('mkOverpaymentCard')){
+      const n=overpaymentTotal(data.people[i]);
+      if(n>0){
+        const card=document.createElement('div');card.id='mkOverpaymentCard';card.className='card';
+        card.innerHTML='<b>⚠️ ပိုငွေ / မသတ်မှတ်ရသေး</b><br><strong>'+money(n)+'</strong><br><span class="mini">အတိုး/အရင်းထဲ မသတ်မှတ်ရသေးသော ပေးချေငွေ</span>';
+        main.insertBefore(card,main.firstChild);
+      }
+    }
+  }
+}
+</script>
 </body></html>
