@@ -180,4 +180,33 @@ main{padding:14px 12px 90px!important}
 .chat{background:linear-gradient(135deg,#10b981,#059669)!important;border:3px solid #fff!important;box-shadow:0 5px 18px #05966955!important}
 h2{font-weight:800!important}button:active{transform:scale(.98)}
 </style>
+<script>
+const MK_PAYMENT_ONLY_EDIT_DELETE_V2=true;
+(function(){
+  const oldDetail=detail;
+  detail=function(i){
+    oldDetail(i);
+    const main=document.getElementById('main');
+    if(!main)return;
+    [...main.querySelectorAll('.card')].forEach(card=>{
+      const h=card.querySelector('h2');
+      if(h && h.textContent.includes('ချေးငွေတစ်ဦးချင်းစာရင်း')) card.remove();
+    });
+    const historyCard=[...main.querySelectorAll('.card')].find(card=>{
+      const h=card.querySelector('h2');
+      return h && h.textContent.includes('ငွေစာရင်းမှတ်တမ်း');
+    });
+    if(historyCard){
+      const old=historyCard.querySelector('[data-payment-only-action]');
+      if(old)old.remove();
+      const b=document.createElement('button');
+      b.className='btn primary wide';
+      b.setAttribute('data-payment-only-action','1');
+      b.textContent='✎ ငွေသွင်းထားသောစာရင်း ပြင် / ဖျက်';
+      b.onclick=function(){paymentHistory(i)};
+      historyCard.appendChild(b);
+    }
+  };
+})();
+</script>
 </body></html>
