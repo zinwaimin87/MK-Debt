@@ -8,47 +8,61 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add 3D animated UI layer
+      - name: Add polished 3D UI layer
         run: |
           python - <<'PY'
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
-          if 'MK_3D_VIBRANT_UI_V1' in s:
+          if 'MK_3D_VIBRANT_UI_V2' in s:
               print('already installed')
               raise SystemExit(0)
-          js=r'''<style id="mk-3d-ui-v1">
-          :root{--c1:#6c3cff;--c2:#00b8ff;--c3:#ff3cac;--c4:#00d084;--ink:#18233d}
-          body{background:radial-gradient(circle at 15% 5%,#d9c7ff 0,#eef4ff 28%,#e9faff 55%,#f9e9ff 100%)!important}
-          .app{background:linear-gradient(145deg,#ffffffee,#f5f8ffff)!important;box-shadow:0 0 45px #4d3cff22}
-          header{background:linear-gradient(135deg,#3514a4,#6538ff 48%,#00aeefff)!important;color:#fff!important;border:0!important;box-shadow:0 8px 24px #3215a955;position:sticky}
-          .title small,.title h1{color:#fff!important}.menu,.btn{transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}.menu:hover,.btn:hover{transform:translateY(-2px) scale(1.025);box-shadow:0 9px 20px #3c4cff25;filter:saturate(1.15)}
-          .primary{background:linear-gradient(135deg,#6c3cff,#008dff)!important;box-shadow:0 6px 18px #4e3cff55!important}.danger{background:linear-gradient(135deg,#ff3158,#ff6b2c)!important}.green{background:linear-gradient(135deg,#00a878,#00d084)!important}
-          .card{border:1px solid #ffffff!important;background:linear-gradient(145deg,#ffffff,#f5f7ff)!important;box-shadow:8px 12px 28px #3344aa16,-3px -3px 12px #fff!important;transform:translateZ(0);animation:mkCardIn .45s ease both}
-          .stat{background:linear-gradient(145deg,#f8fbff,#e9f0ff)!important;border:0;box-shadow:inset 2px 2px 7px #fff,inset -3px -3px 8px #b9c8e833}
-          .field{background:linear-gradient(145deg,#fff,#f1f5ff)!important;border-color:#d5dcf2!important;box-shadow:inset 2px 2px 7px #d7e0f433}
-          .field:focus-within{border-color:#7650ff!important;box-shadow:0 0 0 3px #7650ff22,0 8px 20px #7650ff18!important;transform:translateY(-1px)}
-          .person{background:linear-gradient(135deg,#ffffff,#f1f5ff)!important;border:1px solid #e0e5f5!important;box-shadow:0 7px 18px #4154aa16!important;transition:.2s}.person:hover{transform:translateY(-3px);box-shadow:0 12px 25px #4154aa25!important}
-          .avatar{background:linear-gradient(135deg,#6c3cff,#00b8ff)!important;color:#fff;box-shadow:0 6px 14px #5b42d955;animation:mkFloat 3s ease-in-out infinite}
-          .chat{background:linear-gradient(135deg,#00a86b,#00d084)!important;box-shadow:0 8px 24px #00a86b55!important;animation:mkPulse 2.2s ease-in-out infinite}
-          .modalbox{background:linear-gradient(145deg,#fff,#f3f7ff)!important;box-shadow:0 -10px 45px #1e2e7a22!important;animation:mkModal .3s ease both}
-          .drawer{background:linear-gradient(180deg,#24105f,#39218a 55%,#075b91)!important;box-shadow:12px 0 35px #16104d66}
-          .drawer .item{background:#ffffff12!important;border-color:#ffffff33!important;transition:.2s}.drawer .item:hover{background:#ffffff22!important;transform:translateX(4px)}
-          .tabs button{border:0!important;background:linear-gradient(135deg,#eef1ff,#fff)!important;box-shadow:0 4px 12px #3344aa18}.tabs button:hover{transform:translateY(-2px)}
-          .table th{background:linear-gradient(135deg,#3c20a8,#008fe8)!important;color:#fff!important}.table td{background:#ffffffcc}
-          @keyframes mkFloat{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-5px) rotate(1deg)}}
-          @keyframes mkPulse{0%,100%{transform:scale(1);box-shadow:0 8px 24px #00a86b55}50%{transform:scale(1.045);box-shadow:0 12px 32px #00a86b77}}
-          @keyframes mkCardIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-          @keyframes mkModal{from{opacity:0;transform:translateY(22px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+          js=r'''<style id="mk-3d-ui-v2">
+          :root{--v1:#4b20e8;--v2:#007cff;--v3:#00c8ff;--v4:#ff2fa4;--v5:#00c98a;--dark:#17213d}
+          body{background:radial-gradient(circle at 8% 0%,#d8c7ff 0,#eef4ff 30%,#e8fbff 62%,#ffeafb 100%)!important;background-attachment:fixed!important}
+          body:before{content:"";position:fixed;inset:-25%;pointer-events:none;z-index:-1;background:radial-gradient(circle at 20% 25%,#ffffff88 0 5%,transparent 6%),radial-gradient(circle at 80% 70%,#ffffff66 0 4%,transparent 5%);animation:mkBg 12s ease-in-out infinite alternate}
+          header{background:linear-gradient(135deg,#30119b,#5b2df2 48%,#009ee8)!important;color:#fff!important;border:0!important;box-shadow:0 10px 30px #24107855!important;backdrop-filter:blur(12px)}
+          .title small,.title h1{color:#fff!important;text-shadow:0 2px 12px #0003}
+          .app{background:#ffffffcc!important;box-shadow:0 15px 55px #243b8a18!important;backdrop-filter:blur(16px)}
+          .card,.person,.stat,.field,.modalbox{border-radius:22px!important}
+          .card{background:linear-gradient(145deg,#ffffff,#f4f7ff)!important;border:1px solid #fff!important;box-shadow:8px 14px 32px #2d46a51c,-3px -3px 12px #fff!important;animation:mkIn .45s ease both;transform-style:preserve-3d}
+          .card:hover{box-shadow:12px 18px 38px #2d46a52b!important;transform:translateY(-2px)}
+          .person{background:linear-gradient(145deg,#fff,#f1f5ff)!important;border:1px solid #e2e8ff!important;box-shadow:0 8px 20px #3049a51a!important;transition:transform .22s,box-shadow .22s!important}
+          .person:hover{transform:perspective(700px) rotateX(1deg) rotateY(-1deg) translateY(-4px)!important;box-shadow:0 16px 32px #3049a530!important}
+          .stat{background:linear-gradient(145deg,#fff,#e9f1ff)!important;border:0!important;box-shadow:inset 2px 2px 8px #fff,inset -4px -4px 10px #aabbe844,0 7px 18px #344ba51a!important}
+          .stat b{font-size:1.2em}
+          .primary{background:linear-gradient(135deg,#5b2df2,#007cff)!important;box-shadow:0 8px 20px #4b27e84d!important}
+          .danger{background:linear-gradient(135deg,#ff285e,#ff6b2b)!important;box-shadow:0 7px 18px #ff315244!important}
+          .green{background:linear-gradient(135deg,#00a873,#00d68c)!important;box-shadow:0 7px 18px #00ad7750!important}
+          .btn{border:0!important;border-radius:15px!important;font-weight:800!important;transition:transform .18s,box-shadow .18s,filter .18s!important}
+          .btn:hover{transform:translateY(-3px) scale(1.02)!important;filter:saturate(1.15);box-shadow:0 11px 24px #3147a52b!important}.btn:active{transform:scale(.97)!important}
+          .menu{border-radius:16px!important;background:linear-gradient(145deg,#fff,#edf3ff)!important;box-shadow:0 6px 16px #3348a526!important}
+          .avatar{background:linear-gradient(135deg,#5b2df2,#00b8ff)!important;color:#fff!important;box-shadow:0 8px 18px #5531d655!important;animation:mkFloat 3s ease-in-out infinite}
+          .chat{background:linear-gradient(135deg,#00a873,#00d98f)!important;box-shadow:0 9px 28px #00a87355!important;animation:mkPulse 2.2s ease-in-out infinite}
+          .field{background:linear-gradient(145deg,#fff,#f3f7ff)!important;border:1px solid #d9e1f5!important;box-shadow:inset 2px 2px 7px #cbd7ee33!important;transition:.2s!important}
+          .field:focus-within{border-color:#6940ff!important;box-shadow:0 0 0 4px #6940ff18,0 10px 22px #6940ff18!important;transform:translateY(-2px)}
+          input,select,textarea{font-size:16px!important}
+          .modalbox{background:linear-gradient(145deg,#fff,#f2f6ff)!important;box-shadow:0 18px 55px #18265b35!important;animation:mkModal .3s ease both}
+          .drawer{background:linear-gradient(160deg,#24105e,#4922a8 48%,#007cae)!important;box-shadow:15px 0 40px #12133c70!important}
+          .drawer .item{border:1px solid #ffffff25!important;border-radius:15px!important;background:#ffffff12!important;transition:.2s!important}.drawer .item:hover{background:#ffffff24!important;transform:translateX(5px)!important}
+          .tabs{gap:10px!important}.tabs button{border:0!important;border-radius:14px!important;background:linear-gradient(135deg,#eef1ff,#fff)!important;box-shadow:0 5px 14px #3448a51b!important;font-weight:800!important}
+          .table{border-radius:18px!important;overflow:auto;box-shadow:0 7px 20px #3344a51b!important}.table th{background:linear-gradient(135deg,#3b1fb0,#008fe8)!important;color:#fff!important}.table td{background:#ffffffdd!important}
+          .badge{border-radius:999px!important;box-shadow:0 4px 10px #3147a51b!important}
+          @keyframes mkBg{from{transform:translate3d(-1%,0,0) rotate(0)}to{transform:translate3d(1%,1%,0) rotate(2deg)}}
+          @keyframes mkFloat{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-6px) rotate(1deg)}}
+          @keyframes mkPulse{0%,100%{transform:scale(1);box-shadow:0 9px 28px #00a87355}50%{transform:scale(1.045);box-shadow:0 13px 36px #00a87375}}
+          @keyframes mkIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+          @keyframes mkModal{from{opacity:0;transform:translateY(25px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+          @media(max-width:600px){.card,.person{border-radius:19px!important}.btn{min-height:46px!important}.field{min-height:58px!important}.stat{min-height:82px!important}.table{font-size:13px!important}}
           @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
-          </style>
-          <script>const MK_3D_VIBRANT_UI_V1=true;</script>'''
-          marker='</head>' if '</head>' in s else '</body>'
+          </style><script>const MK_3D_VIBRANT_UI_V2=true;</script>'''
+          marker='</head>' if '</head>' in s else '</body>' if '</body>' in s else None
+          if not marker: raise SystemExit('HTML insertion point not found')
           s=s.replace(marker,js+'\n'+marker,1)
           p.write_text(s,encoding='utf-8')
-          print('installed 3D vibrant UI')
+          print('installed polished 3D UI v2')
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          if git diff --cached --quiet; then echo 'No changes'; else git commit -m 'Add vibrant 3D UI animation [3d-ui-done]'; git push origin main; fi
+          if git diff --cached --quiet; then echo 'No changes'; else git commit -m 'Apply polished vibrant 3D UI [3d-ui-v2-done]'; git push origin main; fi
