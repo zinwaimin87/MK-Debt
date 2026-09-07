@@ -1,0 +1,50 @@
+name: MK Debt Glass UI Final
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  glass:
+    if: "!contains(github.event.head_commit.message, '[glass-ui]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply glassmorphism design
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          marker='MK DEBT GLASS UI FINAL V1'
+          if marker in s:
+              raise SystemExit('already applied')
+          css=r'''
+          /* MK DEBT GLASS UI FINAL V1 */
+          body{background:radial-gradient(circle at 10% 5%,#ffd66b55 0 12%,transparent 32%),radial-gradient(circle at 90% 10%,#70d7ff66 0 16%,transparent 38%),radial-gradient(circle at 50% 55%,#b96cff40 0 15%,transparent 40%),linear-gradient(135deg,#9fe8ff 0%,#e9c8ff 38%,#c7f7d2 68%,#fff1b8 100%);background-attachment:fixed}
+          body:before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(circle at 20% 75%,#ff8fc955,transparent 24%),radial-gradient(circle at 80% 72%,#75e6c555,transparent 25%);filter:blur(24px)}
+          .app{background:linear-gradient(180deg,#ffffff18,#ffffff08);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-left:1px solid #ffffff66;border-right:1px solid #ffffff44;box-shadow:0 0 55px #5275b233}
+          .top{background:#ffffff18!important;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-bottom:1px solid #ffffff55!important;padding:16px 14px 14px}
+          .brand{gap:12px}.logo{width:58px;height:58px;border-radius:19px;background:linear-gradient(145deg,#ffffffaa,#77d8ff88 45%,#a66bffbb);border:1px solid #ffffffbb;box-shadow:inset 0 1px #fff,0 8px 22px #6b62c955;font-size:29px}.brand h1{font-size:30px;text-shadow:0 2px 7px #4b5a8a66}.brand small{color:#f4f6ffcc}
+          .content{padding:14px 12px 100px}.card{background:linear-gradient(145deg,#ffffff55,#ffffff1c);border:1px solid #ffffff75;border-radius:24px;box-shadow:inset 0 1px 0 #ffffffaa,0 10px 28px #42639b25;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+          .hero{background:linear-gradient(135deg,#ffffff55,#9bdcff38 42%,#c88bff40)!important}.muted{color:#eef3ffcc}.big{font-size:24px;text-shadow:0 2px 8px #334d7a44}.field{background:#ffffff20;border:1px solid #ffffff65;box-shadow:inset 0 1px #ffffff77}.field input,.field select{color:#fff}.field input::placeholder{color:#f2f5ff99}
+          .btn{background:#ffffff2c;border:1px solid #ffffff65;box-shadow:inset 0 1px #ffffff88,0 5px 14px #4766a522;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.primary{background:linear-gradient(135deg,#55d8ffcc,#9a63ffcc)!important}.green{background:linear-gradient(135deg,#4ce6b1cc,#36a9dacc)!important}
+          .person{background:#ffffff2b;border:1px solid #ffffff68;border-radius:20px;box-shadow:inset 0 1px #ffffff77,0 7px 18px #4766a51f}.avatar{width:48px;height:48px;border-radius:16px;background:linear-gradient(145deg,#ffffff88,#66d8ff88,#a66aff99);border:1px solid #ffffffaa;box-shadow:inset 0 1px #fff,0 5px 12px #526aa533}
+          .bottom{background:#ffffff26!important;border:1px solid #ffffff70!important;border-bottom:0;border-radius:28px 28px 0 0;padding:8px 5px 7px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 -8px 28px #46649b35}.nav{color:#f0f3ffcc;border-radius:18px}.nav.active{color:#fff;background:linear-gradient(145deg,#ffffff50,#a970ff70);box-shadow:inset 0 1px #ffffffaa}.nav b{font-size:21px}
+          .glass-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:11px}.glass-stat{min-height:116px;padding:14px;border-radius:22px;background:linear-gradient(145deg,#ffffff66,#ffffff20);border:1px solid #ffffff80;box-shadow:inset 0 1px #fff,0 10px 24px #42639b25;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.glass-stat .ico{font-size:25px}.glass-stat b{display:block;font-size:18px;margin-top:7px;white-space:nowrap}.glass-stat small{color:#ffffffcc}
+          .quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:11px}.quick{min-height:92px;padding:10px 5px;border-radius:20px;border:1px solid #ffffff75;background:#ffffff2b;color:#fff;font-weight:700;box-shadow:inset 0 1px #ffffff88,0 8px 18px #4766a522}.quick .qico{font-size:28px;display:block;margin-bottom:4px}.quick:active{transform:scale(.97)}.search-glass{display:flex;gap:8px}.search-glass .field{flex:1}.filter-btn{width:52px;min-height:52px;border-radius:18px;margin-top:7px}
+          @media(max-width:360px){.glass-stats{grid-template-columns:1fr 1fr}.glass-stat:last-child{grid-column:1/-1}.quick-grid{grid-template-columns:repeat(2,1fr)}}
+          '''
+          s=s.replace('</style>',css+'\n</style>',1)
+          pat=r'function dashboard\(\)\{.*?\}\s*function newloan\(\)'
+          dash=r'''function dashboard(){let mmk=d.people.filter(p=>p.currency==='MMK').reduce((s,p)=>s+balance(p),0),thb=d.people.filter(p=>p.currency==='THB').reduce((s,p)=>s+balance(p),0),loanM=d.people.filter(p=>p.currency==='MMK').reduce((s,p)=>s+num(p.amount),0),loanT=d.people.filter(p=>p.currency==='THB').reduce((s,p)=>s+num(p.amount),0),paidM=d.people.filter(p=>p.currency==='MMK').reduce((s,p)=>s+principalPaid(p),0),paidT=d.people.filter(p=>p.currency==='THB').reduce((s,p)=>s+principalPaid(p),0);$('dashboard').innerHTML=`<div class="card hero"><div class="row"><div><div class="muted">MK DEBT · OWNER</div><h2>ချေးငွေ စီမံခန့်ခွဲမှု</h2><p class="muted">Loan · Interest · Payment</p></div><div class="logo">💎</div></div></div><div class="glass-stats"><div class="glass-stat"><span class="ico">💰</span><small>Total Loan</small><b>${money(loanM,'MMK')}</b><small>${money(loanT,'THB')}</small></div><div class="glass-stat"><span class="ico">📊</span><small>Total Paid</small><b>${money(paidM,'MMK')}</b><small>${money(paidT,'THB')}</small></div><div class="glass-stat"><span class="ico">◔</span><small>Remaining</small><b>${money(mmk,'MMK')}</b><small>${money(thb,'THB')}</small></div></div><div class="quick-grid"><button class="quick" data-page="newloan"><span class="qico">➕</span>Add Loan</button><button class="quick" data-page="borrowers"><span class="qico">👥</span>Borrowers</button><button class="quick" data-page="payments"><span class="qico">💳</span>Payment</button><button class="quick" data-page="reports"><span class="qico">📈</span>Reports</button></div><div class="card"><div class="search-glass"><div class="field"><input id="homeSearch" type="search" placeholder="🔍 Search borrower..."></div><button class="btn filter-btn" data-page="borrowers">☷</button></div></div><div class="card"><div class="row"><h3>👥 Borrowers · ${d.people.length}</h3><button class="btn" data-page="borrowers">View All</button></div>${d.people.slice().reverse().map(person).join('')||'<div class="empty">စာရင်းမရှိသေးပါ</div>'}</div>`;$('homeSearch')?.addEventListener('input',e=>{let q=e.target.value.toLowerCase();let list=d.people.filter(p=>(p.name+' '+(p.phone||'')).toLowerCase().includes(q));let box=$('dashboard').querySelector('.card:last-child');if(box)box.innerHTML='<div class="row"><h3>👥 Borrowers · '+list.length+'</h3><button class="btn" data-page="borrowers">View All</button></div>'+(list.map(person).join('')||'<div class="empty">မတွေ့ပါ</div>')})}function newloan()'''
+          s,n=re.subn(pat,dash,s,count=1,flags=re.S)
+          if n!=1: raise SystemExit('dashboard function not found')
+          p.write_text(s,encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Apply final glassmorphism UI [glass-ui]'
+          git push origin HEAD:main
