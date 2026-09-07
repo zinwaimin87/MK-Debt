@@ -28,4 +28,29 @@ function saveSettings(){d.rate=num($('sr').value)||10;d.currency=$('sc').value;p
 function backup(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}));a.download='MK-Debt-Backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('Backup ထုတ်ပြီးပါပြီ ✓')}
 document.addEventListener('click',e=>{let q=e.target.closest('[data-page]');if(q){go(q.dataset.page);return}let b=e.target.closest('[data-action]');if(!b)return;let a=b.dataset.action,id=b.dataset.id;if(a==='close')go('dashboard');else if(a==='saveLoan')saveLoan();else if(a==='detail')detail(id);else if(a==='pay')pay(id);else if(a==='savePay')savePay(id);else if(a==='edit')edit(id);else if(a==='saveEdit')saveEdit(id);else if(a==='delete')del(id);else if(a==='saveSettings')saveSettings();else if(a==='backup')backup()});
 document.addEventListener('input',e=>{if(['la','lr','lm'].includes(e.target.id))updatePreview();if(e.target.id==='search')filterBorrowers()});document.addEventListener('change',e=>{if(e.target.id==='restore'&&e.target.files[0]){let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!Array.isArray(x.people)||!Array.isArray(x.payments))throw 0;d=x;persist();toast('Restore အောင်မြင်ပါပြီ ✓');go('dashboard')}catch(z){toast('Backup ဖိုင်မမှန်ပါ')}};r.readAsText(e.target.files[0])}});render('dashboard');
-</script></body></html>
+</script><script>
+(function(){
+  const boot='MK_DEBT_BOOT_RECOVERY_V1';
+  function renderFallback(){
+    const m=document.getElementById('main'); if(!m) return;
+    let d={people:[]};
+    try{d=JSON.parse(localStorage.getItem('mk-debt-v4')||'null')||d}catch(e){}
+    const people=Array.isArray(d.people)?d.people:[];
+    const money=n=>Number(n||0).toLocaleString()+' ฿';
+    const calc=p=>{
+      let principal=0,interest=0;
+      (p.records||[]).forEach(r=>{if(r.type==='loan')principal+=Number(r.amount)||0;if(r.type==='payment'){let a=Number(r.amount)||0;interest+=Math.min(a,principal*(Number(p.rate)||0)/100);principal=Math.max(0,principal-a)}});
+      return {principal,interest};
+    };
+    let totalP=0,totalI=0; people.forEach(p=>{let c=calc(p);totalP+=c.principal;totalI+=c.interest});
+    m.innerHTML='<div class="card green"><div>စုစုပေါင်း လက်ကျန်အရင်း</div><strong>'+money(totalP)+'</strong><div>အတိုးနှင့် စီမံထားသော အကြွေးစာရင်း</div></div>'+
+      '<div class="grid"><div class="stat"><div>လူဦးရေ</div><b>'+people.length+'</b></div><div class="stat interest"><div>အတိုး</div><b>'+money(totalI)+'</b></div></div>'+
+      '<div class="card"><div class="row"><b>ရရန်အကြွေး</b><button class="btn primary" onclick="window.showPage&&showPage(\'receivable\')">ကြည့်မည်</button></div>'+
+      people.map(p=>{let c=calc(p);return '<div class="person"><div class="avatar">'+String(p.name||'?').slice(0,1)+'</div><div><b>'+String(p.name||'အမည်မရှိ')+'</b><div class="mini">အတိုး '+(Number(p.rate)||0)+'%</div></div><div class="amount">'+money(c.principal)+'</div></div>'}).join('')+'</div>'+
+      '<div class="card"><b>MK Debt</b><div class="mini">Dashboard ကို ပြန်လည်ဖော်ပြထားပါသည်။ သင့်ရှိပြီးသား local data ကို မဖျက်ပါ။</div></div>';
+  }
+  function boot(){setTimeout(function(){const m=document.getElementById('main');if(m&&(!m.innerHTML.trim()||m.innerText.trim().length<10))renderFallback()},120)}
+  window.addEventListener('error',boot); if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
+</script>
+</body></html>
