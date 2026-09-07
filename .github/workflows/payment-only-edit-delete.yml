@@ -1,0 +1,61 @@
+name: Payment-only edit delete
+on:
+  push:
+    branches: [main]
+    paths:
+      - .force-payment-only
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install payment-only controls
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          if 'MK_PAYMENT_ONLY_EDIT_DELETE_V2' in s:
+              print('already installed')
+              raise SystemExit(0)
+          js=r'''<script>
+          const MK_PAYMENT_ONLY_EDIT_DELETE_V2=true;
+          (function(){
+            const oldDetail=detail;
+            detail=function(i){
+              oldDetail(i);
+              const main=document.getElementById('main');
+              if(!main)return;
+              [...main.querySelectorAll('.card')].forEach(card=>{
+                const h=card.querySelector('h2');
+                if(h && h.textContent.includes('ချေးငွေတစ်ဦးချင်းစာရင်း')) card.remove();
+              });
+              const historyCard=[...main.querySelectorAll('.card')].find(card=>{
+                const h=card.querySelector('h2');
+                return h && h.textContent.includes('ငွေစာရင်းမှတ်တမ်း');
+              });
+              if(historyCard){
+                const old=historyCard.querySelector('[data-payment-only-action]');
+                if(old)old.remove();
+                const b=document.createElement('button');
+                b.className='btn primary wide';
+                b.setAttribute('data-payment-only-action','1');
+                b.textContent='✎ ငွေသွင်းထားသောစာရင်း ပြင် / ဖျက်';
+                b.onclick=function(){paymentHistory(i)};
+                historyCard.appendChild(b);
+              }
+            };
+          })();
+          </script>'''
+          marker='</body>'
+          s=s.replace(marker,js+'\n'+marker,1)
+          p.write_text(s,encoding='utf-8')
+          print('installed payment-only edit/delete controls')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then echo 'No changes'; else git commit -m 'Make only payment entries editable and deletable'; git push origin main; fi
