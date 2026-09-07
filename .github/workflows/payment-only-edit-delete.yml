@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
     paths:
+      - .force-loan-edit-delete
       - .force-payment-only
   workflow_dispatch:
 permissions:
