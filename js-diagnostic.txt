@@ -1,10 +1,1 @@
-FAIL
-/tmp/x.js:20
-function payments(){let arr=db.payments.slice().reverse();$('payments').innerHTML=`<div class="card"><h2>ငွေပေးချေမှုမှတ်တမ်း</h2>${arr.map(p=>{let l=db.loans.find(x=>x.id===p.loanId);return `<div class="person"><div class="row"><div><strong>${esc(l?.name||'ဖျက်ထားသောချေးငွေ')}</strong><div class="summary">${p.date}<br>အတိုးပေး: ${fmt(p.interest,l?.currency||'MMK')} · အရင်းဆပ်: ${fmt(p.principal,l?.currency||'MMK')}<br>ပေးချေမှုစုစုပေါင်း: ${fmt(p.amount,l?.currency||'MMK')}<br>${l?'<span class="red">လက်ရှိအတိုးကျန်စုစုပေါင်း: '+fmt(interestTotals(l).unpaid,l.currency)+'</span><br><span class="greenText">လက်ရှိအရင်းကျန်: '+fmt(principalBalance(l),l.currency)+'</span>:'အကြွေးအချက်အလက် မရှိတော့ပါ'}</div></div><div class="actions"><button class="btn small" data-action="editPayment" data-id="${p.id}">ပြင်</button><button class="btn small danger" data-action="deletePayment" data-id="${p.id}">ဖျက်</button></div></div></div>`}).join('')||'<div class="empty">ပေးချေမှု မရှိသေးပါ</div>'}</div>`}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     ^^^^^^^^^^^^^^^
-
-SyntaxError: Unexpected identifier 'အကြွေးအချက်အလက်'
-    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
-    at checkSyntax (node:internal/main/check_syntax:78:3)
-
-Node.js v22.23.3
+OK
