@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="my"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#dff5ff"><title>MK Debt — အကြွေးစာရင်း</title>
+<html lang="my"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#287de9"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MK Debt"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" type="image/svg+xml" href="/icon.svg"><link rel="apple-touch-icon" href="/icon.svg"><title>MK Debt — အကြွေးစာရင်း</title>
 <style>
 :root{--bg:#eaf8ff;--panel:#ffffff;--panel2:#e3f5ff;--text:#103b78;--muted:#54799c;--blue:#159df0;--blue2:#2868ed;--cyan:#70ddff;--purple:#5b5de8;--green:#08a982;--red:#e83f68;--line:#ffffffb8;--shadow:0 12px 28px #277fba20}
 *{box-sizing:border-box}
@@ -288,5 +288,6 @@ if(!loadShare())render('dashboard');
  client.auth.getSession().then(async({data,error})=>{if(error){status.textContent=error.message;return}if(data.session&&!location.hash.startsWith('#cloudshare=')&&!location.hash.startsWith('#share='))await enter(data.session.user)});
  client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){cloudUser=null;gate.style.display='flex'}});
 })();
+if('serviceWorker' in navigator && location.protocol==='https:'){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(err=>console.warn('MK Debt app install setup:',err)));}
 </script>
 </body></html>
