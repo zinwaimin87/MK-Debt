@@ -1,10 +1,1 @@
-FAIL
-/tmp/x.js:70
-function activateSettingsPanel(k){document.querySelectorAll('#settings [data-settings-panel]').forEach(p=>p.hidden=p.dataset.settingsPanel!==k);document.querySelectorAll('#settings [data-settings-jump]').forEach(b=>{const on=b.dataset.settingsJump===k;b.style.background=on?'linear-gradient(110deg,#20a9f1,#4e60e7)':'linear-gradient(145deg,#fff,#e4f5ff)';b.style.color=on?'#fff':'#174780';});}\ndocument.addEventListener('click',e=>{const b=e.target.closest('[data-settings-jump]');if(!b)return;activateSettingsPanel(b.dataset.settingsJump);});
-                                                                                                                                                                                                                                                                                                                                                                                                         ^
-
-SyntaxError: Invalid or unexpected token
-    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
-    at checkSyntax (node:internal/main/check_syntax:78:3)
-
-Node.js v22.23.3
+OK
