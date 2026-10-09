@@ -53,6 +53,69 @@ h2,h3{margin:0 0 10px}h2{font-size:19px}h3{font-size:15px}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
 
 @media(min-width:600px){.stats{grid-template-columns:repeat(4,minmax(0,1fr))}main{padding:16px}.top{padding:15px 18px}}
+
+/* Compact, clear, phone-first MK Debt layout */
+:root{--bg:#f4f0e7;--panel:#fffdf8;--panel2:#eee8dc;--text:#202f43;--muted:#687486;--blue:#25476c;--blue2:#193b60;--cyan:#d8e3e8;--purple:#b18b4c;--green:#247653;--red:#bd3c42;--line:#e1d8c8;--shadow:0 4px 14px #26394b0c}
+html{scroll-behavior:smooth}
+body{background:#f4f0e7;color:#202f43;background-attachment:scroll}
+.app{padding-bottom:74px}
+.top{padding:9px 12px;background:#213e5e;border-bottom:1px solid #d2bd91;box-shadow:0 3px 12px #14283c18}
+.logo{width:48px;height:42px;flex-basis:48px;border-radius:10px;font-size:24px;animation:none;background:#ffffff12;box-shadow:inset 0 1px #ffffff40}
+.brand{gap:9px}.brand h1{font-size:21px;text-shadow:none}
+main{padding:9px}
+.card{padding:12px;margin-bottom:9px;border-radius:16px;background:#fffdf8;border:1px solid #e4dccd;box-shadow:0 3px 10px #29394b0b}
+.card:before{display:none}
+.hero{background:#25476c;color:white;box-shadow:none}
+h2{font-size:18px;margin-bottom:8px}h3{font-size:14px;margin-bottom:7px}
+.stats{gap:7px}
+.stat{padding:10px;border-radius:14px;background:#fffdf8;border:1px solid #e4dccd;box-shadow:none}
+.stat small{font-size:11px;line-height:1.35}.stat b{font-size:15px;margin-top:4px}
+.field{margin:6px 0}.field label{font-size:12px;margin-bottom:4px}
+.field input,.field select,.field textarea{padding:9px 10px;border-radius:10px;border:1px solid #d9d2c5;background:#fff;color:#202f43;box-shadow:none;font-size:15px}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#7c9bb8;box-shadow:0 0 0 2px #25476c16}
+.grid{gap:7px}
+.btn{padding:8px 10px;min-height:38px;border-radius:10px;background:#fffdf8;border:1px solid #d9d2c5;color:#25476c;box-shadow:none;transition:background .15s}
+.btn:active{transform:scale(.99);filter:none}
+.btn.primary{background:#25476c;border:1px solid #25476c;color:white;box-shadow:none}
+.btn.green{background:#247653;border-color:#247653;color:white}
+.btn.danger{background:#bd3c42;border-color:#bd3c42;color:white}
+.btn.small{min-height:30px;padding:6px 8px;font-size:12px}
+.person{padding:10px;border-radius:13px;margin-top:7px;background:#fffdf8;border:1px solid #e4dccd;box-shadow:none}
+.person strong{font-size:14px}.person .summary{font-size:12px;line-height:1.45}
+.pill{background:#f0e8d8;border:1px solid #e1d4bb;color:#4d5b6b;padding:4px 8px;font-size:11px}
+.table th,.table td{padding:7px 6px;border-bottom:1px solid #e7dfd2}
+.table th{background:#f1ece2;color:#314b67}
+.tablewrap{border:1px solid #e7dfd2}
+.nav{gap:2px;padding:5px 4px calc(5px + env(safe-area-inset-bottom));background:#fffdf8;border-top:1px solid #ded4c4;box-shadow:0 -3px 12px #29394b0b;backdrop-filter:blur(12px)}
+.nav button{font-size:10px;padding:5px 1px;line-height:1.2;color:#657286;overflow-wrap:anywhere}
+.nav button b{font-size:17px;margin-bottom:2px}
+.nav button.active{background:#25476c;color:#fff;box-shadow:none}
+.toast{bottom:calc(72px + env(safe-area-inset-bottom));background:#213e5e;border:1px solid #d2bd91;box-shadow:0 5px 18px #1d2f431c}
+.settings-shortcuts{padding-bottom:8px;margin-bottom:5px}
+.settings-shortcuts button{padding:8px 10px;border-radius:10px;background:#fffdf8;border:1px solid #ded4c4;color:#25476c;box-shadow:none}
+.settings-shortcuts button:first-child{background:#25476c;color:white}
+.empty{padding:14px}
+.hint{font-size:12px;line-height:1.45}
+@media(max-width:430px){
+ .app{padding-bottom:66px}
+ .top{padding:8px 9px}
+ .brand h1{font-size:19px}
+ main{padding:7px}
+ .card{padding:10px;margin-bottom:8px;border-radius:14px}
+ .stats{gap:6px}
+ .stat{padding:9px;border-radius:12px}
+ .stat b{font-size:14px}
+ .nav button{font-size:9px}
+ .nav button b{font-size:16px}
+ .actions{gap:6px}
+ .actions .btn{flex:1 1 calc(50% - 6px)}
+}
+@media(min-width:600px){
+ main{padding:14px}
+ .app{max-width:760px}
+ .top{padding:12px 16px}
+}
+
 </style></head><body><div class="app"><header class="top"><div class="brand"><div class="logo" aria-label="MK logo">MK</div><div style="flex:1"><h1>MK Debt</h1></div><button type="button" id="top-notification" aria-label="အသိပေးချက်များ" style="position:relative;border:1px solid #ffffffaa;border-radius:16px;background:#ffffffed;color:#174780;min-width:48px;height:46px;font-size:22px;box-shadow:0 4px 12px #17478020" data-action="openNotifications">🔔<span id="top-notification-badge" hidden style="position:absolute;right:-5px;top:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:12px;background:#f04470;color:white;font-size:11px;line-height:20px;font-weight:800;border:2px solid white">0</span></button></div></header><main>
 <section id="dashboard" class="page active"></section><section id="borrowers" class="page"></section><section id="loanform" class="page"></section><section id="detail" class="page"></section><section id="payments" class="page"></section><section id="settings" class="page"></section><section id="chat" class="page"></section>
 </main></div><nav class="nav"><button data-page="dashboard" class="active"><b>⌂</b>ပင်မ</button><button data-page="borrowers"><b>♙</b>အမည်များ</button><button data-page="loanform"><b>＋</b>ချေးငွေထည့်</button><button data-page="payments"><b>↙</b>ငွေပေးချေမှု</button><button data-page="chat"><b>💬</b>Chat Box <span id="chat-unread-badge" class="pill" hidden>!</span></button><button data-page="settings"><b>☷</b>ဆက်တင်</button></nav><div id="toast" class="toast"></div>
