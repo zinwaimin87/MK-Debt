@@ -107,6 +107,7 @@ if(!loadShare())render('dashboard');
  const SUPABASE_URL="https://ykpjzqfjrhykemctnpxo.supabase.co";
  const SUPABASE_KEY="sb_publishable_K1WZUOw433quPPNXOlLGSA_5AAmcWwT";
  const status=document.getElementById('mk-cloud-status'),gate=document.getElementById('mk-cloud-gate'),form=document.getElementById('mk-cloud-form');
+ if(location.hash.startsWith('#share=')){gate.style.display='none';return}
  if(!window.supabase||!window.supabase.createClient){status.textContent='Cloud စနစ်ဖွင့်မရပါ။ Internet connection ကို စစ်ဆေးပြီး ပြန်ဖွင့်ပါ။';return}
  const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
  let cloudUser=null,saveTimer=null,saving=false,queued=false;
