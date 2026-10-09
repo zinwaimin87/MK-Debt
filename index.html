@@ -207,7 +207,7 @@ if(!loadShare())render('dashboard');
  }
  form.addEventListener('submit',async e=>{e.preventDefault();status.textContent='ဝင်ရောက်နေပါသည်…';const email=document.getElementById('mk-cloud-email').value.trim(),password=document.getElementById('mk-cloud-password').value;const {data,error}=await client.auth.signInWithPassword({email,password});if(error){status.textContent='ဝင်မရပါ။ Email/Password ကိုစစ်ပါ။ '+error.message;return}await enter(data.user)});
  document.getElementById('mk-cloud-signup').addEventListener('click',async()=>{status.textContent='အကောင့်ဖန်တီးနေပါသည်…';const email=document.getElementById('mk-cloud-email').value.trim(),password=document.getElementById('mk-cloud-password').value;if(!email||password.length<6){status.textContent='Email နှင့် အနည်းဆုံး 6 လုံးရှိသော Password ထည့်ပါ။';return}const {data,error}=await client.auth.signUp({email,password});if(error){status.textContent='အကောင့်ဖွင့်မရပါ။ '+error.message;return}if(data.session&&data.user){await enter(data.user)}else{status.textContent='အတည်ပြု Email ပို့ပြီးပါပြီ။ Email ထဲက အတည်ပြုလင့်ခ်ကိုနှိပ်ပြီးနောက် ဒီစာမျက်နှာကို ပြန်ဖွင့်ကာ Login ဝင်ပါ။'}});
- client.auth.getSession().then(async({data,error})=>{if(error){status.textContent=error.message;return}if(data.session)await enter(data.session.user)});
+ client.auth.getSession().then(async({data,error})=>{if(error){status.textContent=error.message;return}if(data.session&&!location.hash.startsWith('#cloudshare=')&&!location.hash.startsWith('#share='))await enter(data.session.user)});
  client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){cloudUser=null;gate.style.display='flex'}});
 })();
 </script>
