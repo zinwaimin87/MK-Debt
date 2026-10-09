@@ -209,7 +209,7 @@ if(!loadShare())render('dashboard');
    if(error)throw error;return data;
  };
  window.mkGetOwnerContactPublic=async function(token){const {data,error}=await client.rpc('get_mk_debt_shared_owner_contact',{p_token:token});if(error)throw error;return data||{};};
- window.mkGetOwnerContact=async function(){if(!cloudUser)throw new Error('Owner login မဝင်ရသေးပါ');const {data,error}=await client.from('owner_contact_info').select('owner_phone,guarantor_phone,bank_name,bank_qr_data').eq('owner_id',cloudUser.id).maybeSingle();if(error)throw error;return data||{}};
+ window.mkGetOwnerContact=async function(){if(!cloudUser)throw new Error('Owner login မဝင်ရသေးပါ');const {data,error}=await client.from('owner_contact_info').select('owner_phone,guarantor_phone,bank_name,bank_qr_data,warning_note').eq('owner_id',cloudUser.id).maybeSingle();if(error)throw error;return data||{owner_phone:'',guarantor_phone:'',bank_name:'',bank_qr_data:'',warning_note:''}};
  window.mkSaveOwnerContact=async function(v){if(!cloudUser)throw new Error('Owner login မဝင်ရသေးပါ');const {error}=await client.from('owner_contact_info').upsert({owner_id:cloudUser.id,...v,updated_at:new Date().toISOString()},{onConflict:'owner_id'});if(error)throw error};
  window.mkEditChat=async function(token,id,message,side){const {data,error}=await client.rpc(side==='owner'?'edit_mk_debt_owner_chat':'edit_mk_debt_chat',{p_token:token,p_message_id:id,p_message:message});if(error)throw error;return data};
  window.mkDeleteChat=async function(token,id){const {error}=await client.rpc('delete_mk_debt_chat_for_all',{p_token:token,p_message_id:id});if(error)throw error};
