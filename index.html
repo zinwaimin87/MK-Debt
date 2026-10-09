@@ -57,7 +57,7 @@ h2,h3{margin:0 0 10px}h2{font-size:19px}h3{font-size:15px}
 </main></div><nav class="nav"><button data-page="dashboard" class="active"><b>⌂</b>ပင်မ</button><button data-page="borrowers"><b>♙</b>အမည်များ</button><button data-page="loanform"><b>＋</b>ချေးငွေထည့်</button><button data-page="payments"><b>↙</b>ငွေပေးချေမှု</button><button data-page="settings"><b>☷</b>ဆက်တင်</button></nav><div id="toast" class="toast"></div>
 <script>
 const KEY='mk-debt-live-v3';let db;try{db=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}if(!db||!Array.isArray(db.loans))db={rate:10,loans:[],payments:[]};if(!Array.isArray(db.payments))db.payments=[];db.rate=10;let selectedLoan=null,selectedName=null,editingLoan=null,editingPayment=null;
-const $=id=>document.getElementById(id),N=v=>Math.max(0,Number(v)||0),today=()=>new Date().toLocaleDateString('en-CA'),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),curr=c=>c==='THB'?'฿':'Ks',fmt=(v,c)=>curr(c)+' '+Math.round(N(v)).toLocaleString('en-US'),save=()=>localStorage.setItem(KEY,JSON.stringify(db)),toast=s=>{let e=$('toast');e.textContent=s;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2200)},monthsBetween=(a,b)=>Math.max(0,(b.getFullYear()-a.getFullYear())*12+b.getMonth()-a.getMonth());
+const $=id=>document.getElementById(id),N=v=>Math.max(0,Number(v)||0),today=()=>new Date().toLocaleDateString('en-CA'),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),curr=c=>c==='THB'?'฿':'Ks',fmt=(v,c)=>curr(c)+' '+Math.round(N(v)).toLocaleString('en-US'),save=()=>{localStorage.setItem(KEY,JSON.stringify(db));if(window.mkCloudSync)window.mkCloudSync()},toast=s=>{let e=$('toast');e.textContent=s;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2200)},monthsBetween=(a,b)=>Math.max(0,(b.getFullYear()-a.getFullYear())*12+b.getMonth()-a.getMonth());
 function loanPays(id){return db.payments.filter(p=>p.loanId===id).sort((a,b)=>a.date.localeCompare(b.date))}
 function principalBalance(l,until=today()){return Math.max(0,N(l.amount)-loanPays(l.id).filter(p=>p.date<=until).reduce((s,p)=>s+N(p.principal),0))}
 function schedule(l,asOf=today()){let start=new Date((l.date||today())+'T12:00:00'),now=new Date((asOf||today())+'T12:00:00'),total=monthsBetween(start,now),pays=loanPays(l.id).filter(p=>p.date<=(asOf||today())),bal=N(l.amount),rows=[];for(let i=1;i<=total;i++){let dueDate=new Date(start);dueDate.setMonth(start.getMonth()+i);let end=dueDate.toLocaleDateString('en-CA');let monthStart=new Date(start);monthStart.setMonth(start.getMonth()+i-1);let from=monthStart.toLocaleDateString('en-CA');let principalThisMonth=pays.filter(p=>p.date>=from&&p.date<end).reduce((s,p)=>s+N(p.principal),0);let outstanding=Math.max(0,bal-principalThisMonth);let interestDue=Math.round(outstanding*N(l.rate??10)/100*100)/100;rows.push({month:end.slice(0,7),date:end,base:outstanding,due:interestDue,paid:0,unpaid:interestDue});bal=outstanding;}let interestPayments=pays.slice().sort((a,b)=>a.date.localeCompare(b.date));for(let p of interestPayments){let left=N(p.interest);for(let r of rows){if(r.date>p.date||left<=0)continue;let apply=Math.min(r.unpaid,left);r.paid+=apply;r.unpaid=Math.max(0,r.unpaid-apply);left-=apply;}}return rows}function interestTotals(l,asOf=today()){let s=schedule(l,asOf);return {due:s.reduce((a,r)=>a+r.due,0),paid:loanPays(l.id).filter(p=>p.date<=(asOf||today())).reduce((a,p)=>a+N(p.interest),0),unpaid:s.reduce((a,r)=>a+r.unpaid,0)}}function balancesAt(l,date){return {principal:principalBalance(l,date),interest:interestTotals(l,date).unpaid}}
@@ -83,4 +83,76 @@ function settings(){$('settings').innerHTML=`<div class="card"><div class="row">
 document.addEventListener('click',e=>{let b=e.target.closest('[data-page],[data-action]');if(!b)return;if(b.dataset.page){show(b.dataset.page);return}let a=b.dataset.action,id=b.dataset.id;switch(a){case'toggleSchedule':{let panel=$('schedule-'+id),ico=$('schedule-icon-'+id);if(panel){panel.hidden=!panel.hidden;if(ico)ico.textContent=panel.hidden?'＋':'−'}break}case'openDatePicker':{let d=$('pDate');try{if(d.showPicker)d.showPicker();else{d.focus();d.click()}}catch(_){d.focus();d.click()}break}case'new':selectedName=null;show('loanform');loanform();break;case'saveLoan':saveLoan();break;case'person':openPerson(b.dataset.name);break;case'shareBorrower':shareBorrower(b.dataset.name);break;case'showBorrowerPay':{let f=$('borrower-pay-'+id);if(f)f.hidden=!f.hidden;break}case'submitBorrowerPay':submitBorrowerPayment(id);break;case'addForName':show('loanform');loanform();break;case'editLoan':selectedLoan=id;show('loanform');loanform(id);break;case'deleteLoan':if(confirm('ဤချေးငွေ၊ ၎င်း၏ပေးချေမှုမှတ်တမ်းများကို ဖျက်မှာ သေချာပါသလား။')){db.loans=db.loans.filter(l=>l.id!==id);db.payments=db.payments.filter(p=>p.loanId!==id);save();toast('ဖျက်ပြီးပါပြီ');selectedName=selectedName;show('detail')}break;case'pay':payForm(id,'both');break;case'payInterest':payForm(id,'interest');break;case'payPrincipal':payForm(id,'principal');break;case'savePayment':savePayment(id);break;case'backDetail':show('detail');break;case'editPayment':editPay(id);break;case'deletePayment':if(confirm('ဤပေးချေမှုမှတ်တမ်းကို ဖျက်မလား။')){let p=db.payments.find(x=>x.id===id);db.payments=db.payments.filter(x=>x.id!==id);save();toast('ပေးချေမှုဖျက်ပြီးပါပြီ');selectedName=db.loans.find(l=>l.id===p?.loanId)?.name||selectedName;show('detail')}break;case'export':{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mk-debt-backup-'+today()+'.json';a.click();URL.revokeObjectURL(url);toast('Backup ထုတ်ပြီးပါပြီ');break}case'import':{let inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';inp.onchange=()=>{let f=inp.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!Array.isArray(x.loans)||!Array.isArray(x.payments))throw Error();db=x;db.rate=10;save();toast('Backup ပြန်ထည့်ပြီးပါပြီ');show('dashboard')}catch(_){toast('Backup ဖိုင် မမှန်ပါ')}};r.readAsText(f)};inp.click();break}}});
 document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.page==='loanform'){selectedName=null;show('loanform');loanform()}else show(b.dataset.page)}));
 if(!loadShare())render('dashboard');
-</script><script src="runtime-rescue.js"></script></body></html>
+</script><script src="runtime-rescue.js"></script>
+<div id="mk-cloud-gate" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(145deg,#eaf8ff,#dcecff);display:flex;align-items:center;justify-content:center;padding:18px">
+  <form id="mk-cloud-form" style="width:min(430px,100%);background:#fff;border:1px solid #b8e6fb;border-radius:22px;padding:22px;box-shadow:0 18px 50px #277fba25;color:#103b78">
+    <div style="font-size:28px;font-weight:900;text-align:center;margin-bottom:6px">MK Debt</div>
+    <h2 style="text-align:center;margin:0 0 8px">Owner Cloud Login</h2>
+    <p style="font-size:13px;color:#54799c;text-align:center;line-height:1.5">ဖုန်းအများအပြားအကြား ချေးငွေစာရင်းများ တူညီစေရန် Owner အကောင့်ဖြင့် ဝင်ပါ။ ပထမဆုံးအကြိမ်တွင် အကောင့်အသစ် ဖန်တီးနိုင်ပါသည်။</p>
+    <label style="display:block;font-size:13px;margin:12px 0 5px">Owner Gmail / Email</label>
+    <input id="mk-cloud-email" type="email" autocomplete="username" required style="width:100%;padding:12px;border:1px solid #b8e6fb;border-radius:12px;font-size:16px">
+    <label style="display:block;font-size:13px;margin:12px 0 5px">Password (အနည်းဆုံး 6 လုံး)</label>
+    <input id="mk-cloud-password" type="password" autocomplete="current-password" minlength="6" required style="width:100%;padding:12px;border:1px solid #b8e6fb;border-radius:12px;font-size:16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:15px">
+      <button id="mk-cloud-login" type="submit" style="padding:12px;border:0;border-radius:12px;background:linear-gradient(120deg,#18c6f4,#2868ed);color:white;font-weight:700">ဝင်မည်</button>
+      <button id="mk-cloud-signup" type="button" style="padding:12px;border:1px solid #b8e6fb;border-radius:12px;background:#eaf8ff;color:#174780;font-weight:700">အကောင့်ဖွင့်မည်</button>
+    </div>
+    <p id="mk-cloud-status" role="status" style="font-size:13px;line-height:1.5;color:#54799c;margin:12px 0 0"></p>
+    <p style="font-size:11px;color:#54799c;line-height:1.5">သတိပြုရန် — အကောင့်တစ်ခုကို Owner အဖြစ် သီးသန့်အသုံးပြုပါ။ Password ကို မည်သူ့ကိုမျှ မမျှဝေပါနှင့်။</p>
+  </form>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+ const SUPABASE_URL="https://ykpjzqfjrhykemctnpxo.supabase.co";
+ const SUPABASE_KEY="sb_publishable_K1WZUOw433quPPNXOlLGSA_5AAmcWwT";
+ const status=document.getElementById('mk-cloud-status'),gate=document.getElementById('mk-cloud-gate'),form=document.getElementById('mk-cloud-form');
+ if(!window.supabase||!window.supabase.createClient){status.textContent='Cloud စနစ်ဖွင့်မရပါ။ Internet connection ကို စစ်ဆေးပြီး ပြန်ဖွင့်ပါ။';return}
+ const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+ let cloudUser=null,saveTimer=null,saving=false,queued=false;
+ async function syncNow(){
+   if(!cloudUser)return;
+   if(saving){queued=true;return}
+   saving=true;
+   try{
+     const payload=JSON.parse(localStorage.getItem('mk-debt-live-v3')||'{"rate":10,"loans":[],"payments":[]}');
+     const {error}=await client.from('owner_data').upsert({owner_id:cloudUser.id,payload,updated_at:new Date().toISOString()},{onConflict:'owner_id'});
+     if(error)throw error;
+     status.textContent='Cloud Database သို့ သိမ်းဆည်းပြီးပါပြီ။';
+   }catch(e){status.textContent='Cloud သိမ်းဆည်းမှု မအောင်မြင်ပါ။ '+(e.message||'Internet ကိုစစ်ပါ။')}
+   finally{saving=false;if(queued){queued=false;syncNow()}}
+ }
+ window.mkCloudSync=function(){if(!cloudUser)return;clearTimeout(saveTimer);saveTimer=setTimeout(syncNow,700)};
+ async function enter(user){
+   cloudUser=user;
+   status.textContent='Cloud စာရင်းများကို ရယူနေပါသည်…';
+   const {data,error}=await client.from('owner_data').select('payload').eq('owner_id',user.id).maybeSingle();
+   if(error){status.textContent='Database ဖတ်မရပါ။ '+error.message;return}
+   const local=(()=>{try{return JSON.parse(localStorage.getItem('mk-debt-live-v3')||'null')}catch(_){return null}})();
+   if(data&&data.payload){
+     const remote=data.payload;
+     if(Array.isArray(remote.loans)&&Array.isArray(remote.payments)){
+       if(local&&((local.loans||[]).length||(local.payments||[]).length)&&((remote.loans||[]).length||(remote.payments||[]).length)){
+         const useCloud=confirm('Cloud မှာလည်း စာရင်းရှိပြီး ဒီဖုန်းမှာလည်း စာရင်းရှိနေပါတယ်။ Cloud စာရင်းကို အသုံးပြုမလား။ Cancel ကိုနှိပ်လျှင် ဒီဖုန်းစာရင်းကို Cloud သို့ အစားထိုးသိမ်းပါမည်။');
+         if(!useCloud){await syncNow()}else{localStorage.setItem('mk-debt-live-v3',JSON.stringify(remote));}
+       }else if(local&&((local.loans||[]).length||(local.payments||[]).length)&&!((remote.loans||[]).length||(remote.payments||[]).length)){
+         await syncNow();
+       }else{
+         localStorage.setItem('mk-debt-live-v3',JSON.stringify(remote));
+       }
+     }
+   }else{
+     await syncNow();
+   }
+   try{db=JSON.parse(localStorage.getItem('mk-debt-live-v3')||'{"rate":10,"loans":[],"payments":[]}');if(!Array.isArray(db.loans))db={rate:10,loans:[],payments:[]};if(!Array.isArray(db.payments))db.payments=[];db.rate=10;save();if(typeof show==='function')show('dashboard')}catch(e){}
+   gate.style.display='none';
+   status.textContent='Cloud ချိတ်ဆက်ပြီးပါပြီ။';
+   let btn=document.getElementById('mk-cloud-logout');if(!btn){btn=document.createElement('button');btn.id='mk-cloud-logout';btn.type='button';btn.textContent='☁ ထွက်မည်';btn.className='btn small';btn.style.position='fixed';btn.style.top='12px';btn.style.right='12px';btn.style.zIndex='20';btn.onclick=async()=>{await client.auth.signOut();location.reload()};document.querySelector('.top')?.appendChild(btn)}
+ }
+ form.addEventListener('submit',async e=>{e.preventDefault();status.textContent='ဝင်ရောက်နေပါသည်…';const email=document.getElementById('mk-cloud-email').value.trim(),password=document.getElementById('mk-cloud-password').value;const {data,error}=await client.auth.signInWithPassword({email,password});if(error){status.textContent='ဝင်မရပါ။ Email/Password ကိုစစ်ပါ။ '+error.message;return}await enter(data.user)});
+ document.getElementById('mk-cloud-signup').addEventListener('click',async()=>{status.textContent='အကောင့်ဖန်တီးနေပါသည်…';const email=document.getElementById('mk-cloud-email').value.trim(),password=document.getElementById('mk-cloud-password').value;if(!email||password.length<6){status.textContent='Email နှင့် အနည်းဆုံး 6 လုံးရှိသော Password ထည့်ပါ။';return}const {data,error}=await client.auth.signUp({email,password});if(error){status.textContent='အကောင့်ဖွင့်မရပါ။ '+error.message;return}if(data.session&&data.user){await enter(data.user)}else{status.textContent='အတည်ပြု Email ပို့ပြီးပါပြီ။ Email ထဲက အတည်ပြုလင့်ခ်ကိုနှိပ်ပြီးနောက် ဒီစာမျက်နှာကို ပြန်ဖွင့်ကာ Login ဝင်ပါ။'}});
+ client.auth.getSession().then(async({data,error})=>{if(error){status.textContent=error.message;return}if(data.session)await enter(data.session.user)});
+ client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){cloudUser=null;gate.style.display='flex'}});
+})();
+</script>
+</body></html>
