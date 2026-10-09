@@ -100,7 +100,14 @@ async function recordCloudRequest(id){
   if(principal>principalBalance(l)){toast('တောင်းဆိုထားသော အရင်းငွေသည် လက်ကျန်အရင်းထက် များနေပါသည်။ ပြင်ဆင်ရန်လိုသည်။');return}
   db.payments.push({id:'P'+Date.now(),loanId:l.id,date:r.requested_payment_date,interest,principal,amount:interest+principal,note:'Cloud Share မှ လက်ခံထားသောတောင်းဆိုချက် '+r.id});
   save();
-  try{await window.mkUpdateCloudRequest(id,'recorded')}catch(e){db.payments=db.payments.filter(p=>p.note!=='Cloud Share မှ လက်ခံထားသောတောင်းဆိုချက် '+r.id);save();throw e}
+  try{
+   if(r.share_token&&window.mkUpdateCloudShareSnapshot){
+    const borrowerLoans=db.loans.filter(x=>x.name.trim().toLowerCase()===String(r.borrower_name||'').trim().toLowerCase());
+    const borrowerIds=new Set(borrowerLoans.map(x=>String(x.id)));
+    await window.mkUpdateCloudShareSnapshot(r.share_token,{v:1,name:r.borrower_name,createdAt:today(),loans:borrowerLoans,payments:db.payments.filter(p=>borrowerIds.has(String(p.loanId))) });
+   }
+   await window.mkUpdateCloudRequest(id,'recorded');
+  }catch(e){db.payments=db.payments.filter(p=>p.note!=='Cloud Share မှ လက်ခံထားသောတောင်းဆိုချက် '+r.id);save();throw e}
   toast('ပေးချေမှုမှတ်တမ်းသိမ်းပြီးပါပြီ');cloudRequests();
  }catch(e){toast('သိမ်းမရပါ: '+(e.message||''))}
 }
@@ -148,6 +155,11 @@ if(!loadShare())render('dashboard');
  window.mkGetCloudShare=async function(token){
    const {data,error}=await client.rpc('get_mk_debt_shared_snapshot',{p_token:token});
    if(error)throw error;return data;
+ };
+ window.mkUpdateCloudShareSnapshot=async function(token,snapshot){
+   if(!cloudUser)throw new Error('Owner login မဝင်ရသေးပါ');
+   const {error}=await client.from('share_links').update({snapshot}).eq('token',token).eq('owner_id',cloudUser.id).is('revoked_at',null);
+   if(error)throw error;
  };
  if(location.hash.startsWith('#cloudshare=')&&typeof loadShare==='function')loadShare();
  window.mkSubmitCloudRequest=async function(args){
