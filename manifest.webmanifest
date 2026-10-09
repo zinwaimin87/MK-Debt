@@ -1,0 +1,15 @@
+{
+  "id": "/",
+  "name": "MK Debt — အကြွေးစာရင်း",
+  "short_name": "MK Debt",
+  "description": "MK Debt အကြွေးစာရင်း",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eaf8ff",
+  "theme_color": "#287de9",
+  "icons": [
+    {"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+  ]
+}
