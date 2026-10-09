@@ -107,6 +107,7 @@ async function recordCloudRequest(id){
     await window.mkUpdateCloudShareSnapshot(r.share_token,{v:1,name:r.borrower_name,createdAt:today(),loans:borrowerLoans,payments:db.payments.filter(p=>borrowerIds.has(String(p.loanId))) });
    }
    await window.mkUpdateCloudRequest(id,'recorded');
+  if(r.share_token&&window.mkSendOwnerChat){await window.mkSendOwnerChat(r.share_token,'ပိုင်ရှင်မှ '+fmt(r.amount,r.currency)+' ကို လက်ခံရရှိပါသည်။ ရက်စွဲ: '+r.requested_payment_date,'payment_receipt',{amount:N(r.amount),currency:r.currency,date:r.requested_payment_date,request_id:r.id});}
   }catch(e){db.payments=db.payments.filter(p=>p.note!=='Cloud Share မှ လက်ခံထားသောတောင်းဆိုချက် '+r.id);save();throw e}
   toast('ပေးချေမှုမှတ်တမ်းသိမ်းပြီးပါပြီ');cloudRequests();
  }catch(e){toast('သိမ်းမရပါ: '+(e.message||''))}
