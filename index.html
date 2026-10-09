@@ -181,7 +181,7 @@ async function recordCloudRequest(id){
   if(!confirm(r.borrower_name+' ၏ '+fmt(r.amount,r.currency)+' တောင်းဆိုချက်ကို လက်ခံပြီး ငွေပေးချေမှုမှတ်တမ်းအဖြစ် သိမ်းမလား။'))return;
   let interest=(r.request_type==='principal'?0:N(r.amount)),principal=(r.request_type==='principal'?N(r.amount):0);
   if(principal>principalBalance(l)){toast('တောင်းဆိုထားသော အရင်းငွေသည် လက်ကျန်အရင်းထက် များနေပါသည်။ ပြင်ဆင်ရန်လိုသည်။');return}
-  db.payments.push({id:'P'+Date.now(),loanId:l.id,date:r.requested_payment_date,interest,principal,amount:interest+principal,note:'Cloud Share မှ လက်ခံထားသောတောင်းဆိုချက် '+r.id});
+  db.payments.push({id:'P'+Date.now(),loanId:l.id,date:r.requested_payment_date,interest,principal,amount:interest+principal,note:'Cloud Share မှ လက်ခံထားသောတောင်းဆိုချက် '+r.id+(r.message?' · '+r.message:'')});
   save();
   try{
    if(r.share_token&&window.mkUpdateCloudShareSnapshot){
@@ -191,7 +191,7 @@ async function recordCloudRequest(id){
    }
    await window.mkUpdateCloudRequest(id,'recorded');
   if(r.share_token&&window.mkSendOwnerChat){await window.mkSendOwnerChat(r.share_token,'ပိုင်ရှင်မှ '+fmt(r.amount,r.currency)+' ကို လက်ခံရရှိပါသည်။ ရက်စွဲ: '+r.requested_payment_date,'payment_receipt',{amount:N(r.amount),currency:r.currency,date:r.requested_payment_date,request_id:r.id});}
-  }catch(e){db.payments=db.payments.filter(p=>p.note!=='Cloud Share မှ လက်ခံထားသောတောင်းဆိုချက် '+r.id);save();throw e}
+  }catch(e){db.payments=db.payments.filter(p=>!String(p.note||'').startsWith('Cloud Share မှ လက်ခံထားသောတောင်းဆိုချက် '+r.id));save();throw e}
   toast('ပေးချေမှုမှတ်တမ်းသိမ်းပြီးပါပြီ');cloudRequests();
  }catch(e){toast('သိမ်းမရပါ: '+(e.message||''))}
 }
