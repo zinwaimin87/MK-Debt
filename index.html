@@ -193,9 +193,9 @@ async function recordCloudRequest(id){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(String(r.requested_payment_date||''))||Number.isNaN(Date.parse(r.requested_payment_date))){toast('ပေးချေမည့်ရက်စွဲ မမှန်ကန်ပါ။');return}
   if(String(r.currency||'').toUpperCase()!==String(l.currency||'MMK').toUpperCase()){toast('ငွေကြေးအမျိုးအစား မကိုက်ညီပါ။ မစစ်ဆေးမချင်း စာရင်းမသွင်းပါ။');return}
   if(!confirm(r.borrower_name+' ၏ '+fmt(r.amount,r.currency)+' တောင်းဆိုချက်ကို လက်ခံပြီး ငွေပေးချေမှုမှတ်တမ်းအဖြစ် သိမ်းမလား။'))return;
-  let interest=(r.request_type==='principal'?0:N(r.amount)),principal=(r.request_type==='principal'?N(r.amount):0),methodMatch=String(r.message||'').match(/ငွေပေးချေနည်းလမ်း:\s*(ငွေသား|Bank QR)/),methodLabel=methodMatch?methodMatch[1]:'မသတ်မှတ်ထားပါ';
+  let interest=(r.request_type==='principal'||r.request_type==='interest_stop'?0:N(r.amount)),principal=(r.request_type==='principal'?N(r.amount):0),arrearsPayment=(r.request_type==='interest_stop'?N(r.amount):0),methodMatch=String(r.message||'').match(/ငွေပေးချေနည်းလမ်း:\s*(ငွေသား|Bank QR)/),methodLabel=methodMatch?methodMatch[1]:'မသတ်မှတ်ထားပါ';
   if(principal>principalBalance(l)){toast('တောင်းဆိုထားသော အရင်းငွေသည် လက်ကျန်အရင်းထက် များနေပါသည်။ ပြင်ဆင်ရန်လိုသည်။');return}
-  let cloudPay={id:'P'+Date.now(),loanId:l.id,date:r.requested_payment_date,interest,principal,arrearsPayment:0,amount:interest+principal,method:methodLabel,receivedBy:'Owner',createdAt:new Date().toISOString(),note:'Cloud Share မှ လက်ခံထားသောတောင်းဆိုချက် '+r.id+' · နည်းလမ်း: '+methodLabel+(r.message?' · '+r.message:'')};db.payments.push(cloudPay);paymentAudit('created',cloudPay);
+  let cloudPay={id:'P'+Date.now(),loanId:l.id,date:r.requested_payment_date,interest,principal,arrearsPayment,amount:interest+principal+arrearsPayment,method:methodLabel,receivedBy:'Owner',createdAt:new Date().toISOString(),note:'Cloud Share မှ လက်ခံထားသောတောင်းဆိုချက် '+r.id+' · နည်းလမ်း: '+methodLabel+(r.message?' · '+r.message:'')};db.payments.push(cloudPay);paymentAudit('created',cloudPay);
   save();
   try{
    if(r.share_token&&window.mkUpdateCloudShareSnapshot){
