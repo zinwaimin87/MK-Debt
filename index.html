@@ -185,7 +185,7 @@ async function recordCloudRequest(id){
   if(actionButton){if(actionButton.disabled)return;actionButton.disabled=true;actionButton.textContent='သိမ်းဆည်းနေသည်…'}
   let requests=await window.mkListCloudRequests(),r=requests.find(x=>String(x.id)===String(id));
   if(!r||r.status!=='pending'){toast('ဤတောင်းဆိုချက်ကို ပြန်လည်စစ်ဆေးပါ');cloudRequests();return}
-  if(db.payments.some(p=>String(p.note||'').includes('Cloud Share မှ လက်ခံထားသောတောင်းဆိုချက် '+r.id))){await window.mkUpdateCloudRequest(id,'recorded');toast('ဤတောင်းဆိုချက်ကို ယခင်က စာရင်းသွင်းပြီးဖြစ်ပါသည်။');cloudRequests();return}
+  let existingCloudPayment=db.payments.find(p=>String(p.note||'').includes('Cloud Share မှ လက်ခံထားသောတောင်းဆိုချက် '+r.id));if(existingCloudPayment){if(r.share_token&&window.mkUpdateCloudShareSnapshot){const borrowerLoans=db.loans.filter(x=>x.name.trim().toLowerCase()===String(r.borrower_name||'').trim().toLowerCase()),borrowerIds=new Set(borrowerLoans.map(x=>String(x.id)));await window.mkUpdateCloudShareSnapshot(r.share_token,{v:1,name:r.borrower_name,createdAt:today(),loans:borrowerLoans,payments:db.payments.filter(p=>borrowerIds.has(String(p.loanId)))});}await window.mkUpdateCloudRequest(id,'recorded');toast('ဤတောင်းဆိုချက်ကို ယခင်က စာရင်းသွင်းပြီးဖြစ်ပါသည်။ ထပ်မံငွေမသွင်းဘဲ Cloud အခြေအနေကို ပြန်လည်ညှိပြီးပါပြီ။');cloudRequests();return}
   let l=db.loans.find(x=>String(x.id)===String(r.loan_id));
   if(!l){toast('ဤချေးငွေကို လက်ရှိဖုန်းစာရင်းထဲ မတွေ့ပါ။ Backup/Cloud Sync ကို စစ်ပါ။');return}
   if(String(l.name||'').trim().toLowerCase()!==String(r.borrower_name||'').trim().toLowerCase()){toast('အမည်မကိုက်ညီပါ။ မှားယွင်းသောအကြွေးစာရင်းထဲ မသွင်းစေရန် ရပ်ထားပါသည်။');return}
