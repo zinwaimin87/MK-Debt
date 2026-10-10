@@ -117,6 +117,25 @@ h2{font-size:18px;margin-bottom:8px}h3{font-size:14px;margin-bottom:7px}
 }
 
 
+
+/* Tighter monthly-interest cards inside Share Link */
+body.share-view #share-interest-page{padding:0}
+body.share-view #share-interest-page>.card{padding:8px 10px!important;margin:0 0 6px!important;border-radius:11px!important}
+body.share-view #share-interest-page h2{font-size:15px!important;line-height:1.35;margin:0 0 4px!important}
+body.share-view #share-interest-page h3{font-size:13px!important;line-height:1.35;margin:0 0 4px!important}
+body.share-view #share-interest-page .hint{font-size:10.5px!important;line-height:1.35;margin:3px 0!important}
+body.share-view #share-interest-page .person{padding:7px 9px!important;margin:5px 0!important;border-radius:10px!important;line-height:1.35!important}
+body.share-view #share-interest-page .row{gap:6px;align-items:flex-start}
+body.share-view #share-interest-page .row strong{font-size:12px;line-height:1.3;flex:0 0 auto}
+body.share-view #share-interest-page .row span{font-size:11px!important;line-height:1.35!important;text-align:right;min-width:0;overflow-wrap:anywhere}
+body.share-view #share-interest-page .person div[style*="font-size:12px"]{font-size:10.5px!important;line-height:1.35!important}
+body.share-view #share-interest-page .person div[style*="margin-top:6px"]{margin-top:3px!important}
+@media(max-width:430px){
+ body.share-view #share-interest-page>.card{padding:7px 8px!important;margin-bottom:5px!important}
+ body.share-view #share-interest-page .person{padding:6px 8px!important;margin:4px 0!important}
+ body.share-view #share-interest-page .row strong{font-size:11.5px}
+ body.share-view #share-interest-page .row span{font-size:10.5px!important}
+}
 /* Share Link compact phone layout only */
 body.share-view main{padding:6px}
 body.share-view #detail{padding:0}
