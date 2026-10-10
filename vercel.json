@@ -1,1 +1,6 @@
-{"rewrites":[{"source":"/","destination":"/app4.html"}],"git":{"deploymentEnabled":true}}
+{
+  "rewrites": [
+    { "source": "/", "destination": "/app4.html" }
+  ],
+  "git": { "deploymentEnabled": true }
+}
