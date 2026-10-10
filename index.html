@@ -158,28 +158,12 @@ body.share-view #share-tab-content .table th,body.share-view #share-tab-content 
 body.share-view #share-tab-content .tablewrap{max-width:100%;border-radius:8px}
 @media(max-width:430px){body.share-view main{padding:5px}body.share-view #share-tab-content>.card,body.share-view #share-database-page>.card,body.share-view #share-loans-page>.card{padding:8px;margin-bottom:6px;border-radius:11px}body.share-view #share-tab-content .stat,body.share-view #share-database-page .stat,body.share-view #share-loans-page .stat{padding:6px}body.share-view #share-tab-content .stat b,body.share-view #share-database-page .stat b,body.share-view #share-loans-page .stat b{font-size:12px}}
 
-/* MK Debt premium navy & gold design system — owner and every share view */
-:root{--bg:#f5f1e8;--panel:#fffdf8;--panel2:#eee7d9;--text:#1e2f43;--muted:#687486;--blue:#203f60;--blue2:#132e4b;--cyan:#d7c18b;--purple:#b58b42;--green:#237653;--red:#b83c43;--line:#e4dac8;--shadow:0 5px 16px #172c4210}
-body{background:#f5f1e8!important;color:#1e2f43!important}
-.top{background:linear-gradient(115deg,#102d4b,#24496c 58%,#183652)!important;border-bottom:1px solid #b99553!important;box-shadow:0 4px 14px #122b441e!important}
-.brand h1{color:#fff!important;letter-spacing:.1px}
-.logo.mk-logo{position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;overflow:hidden;width:50px;height:48px;flex:0 0 50px;padding:3px 0 1px;border-radius:14px;background:linear-gradient(145deg,#294c6d,#0e2742)!important;border:1px solid #d5b66f!important;box-shadow:inset 0 1px 0 #fff5,0 3px 9px #071a2a55!important;color:#f8df9b!important;text-shadow:none!important;animation:none!important;letter-spacing:normal}
-.mk-logo:before{content:"";position:absolute;inset:3px;border:1px solid #d5b66f99;border-radius:10px;z-index:-1}
+
+/* MK Debt logo only: navy tile + gold crown monogram */
+.logo.mk-logo{position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;overflow:hidden;background:linear-gradient(145deg,#294c6d,#0e2742)!important;border:1px solid #d5b66f!important;box-shadow:inset 0 1px 0 #ffffff40,0 3px 8px #102d4b40!important;color:#fff4ce!important}
+.logo.mk-logo:before{content:"";position:absolute;inset:3px;border:1px solid #d5b66f99;border-radius:inherit;z-index:-1}
 .mk-logo .mk-crown{font-family:Georgia,serif;font-size:15px;line-height:13px;color:#f8d77f;text-shadow:0 1px 2px #0008}
 .mk-logo .mk-letters{font-family:Georgia,"Times New Roman",serif;font-size:22px;line-height:23px;font-weight:900;letter-spacing:-1.5px;color:#fff4ce;text-shadow:1px 2px 0 #8b6322,0 0 8px #d9b45b55}
-.card,.person,.stat{background:#fffdf8!important;border-color:#e5dccd!important;box-shadow:0 4px 14px #21374d0b!important}
-.hero{background:linear-gradient(125deg,#183957,#294f71)!important;color:#fff!important;border-color:#bda061!important}
-.btn.primary,.nav button.active{background:#203f60!important;border-color:#203f60!important;color:#fff!important}
-.btn.green{background:#237653!important;border-color:#237653!important;color:#fff!important}
-.btn.danger{background:#b83c43!important;border-color:#b83c43!important;color:#fff!important}
-.pill{background:#f3ead6!important;border-color:#e2d0a8!important;color:#66502b!important}
-.overdue{background:#fff0e9!important;color:#9e342d!important}
-.nav{background:#fffdf8!important;border-top-color:#e2d7c5!important}
-.nav button.active{box-shadow:inset 0 1px #ffffff30!important}
-.field input,.field select,.field textarea{background:#fff!important;border-color:#ddd3c3!important;color:#1e2f43!important}
-.table th{background:#f2ecdf!important;color:#263f5a!important}.table th,.table td{border-bottom-color:#e5dccd!important}
-body.share-view .top{background:linear-gradient(115deg,#102d4b,#24496c 58%,#183652)!important}
-body.share-view .card{background:#fffdf8!important;border-color:#e5dccd!important}
 @media(max-width:430px){.logo.mk-logo{width:46px;height:44px;flex-basis:46px;border-radius:12px}.mk-logo .mk-letters{font-size:20px}}
 </style></head><body><div class="app"><header class="top"><div class="brand"><div class="logo mk-logo" aria-label="MK Debt logo"><span class="mk-crown">♛</span><span class="mk-letters">MK</span></div><div style="flex:1"><h1>MK Debt</h1></div><button type="button" id="top-notification" aria-label="အသိပေးချက်များ" style="position:relative;border:1px solid #ffffffaa;border-radius:16px;background:#ffffffed;color:#174780;min-width:48px;height:46px;font-size:22px;box-shadow:0 4px 12px #17478020" data-action="openNotifications">🔔<span id="top-notification-badge" hidden style="position:absolute;right:-5px;top:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:12px;background:#f04470;color:white;font-size:11px;line-height:20px;font-weight:800;border:2px solid white">0</span></button></div></header><main>
 <section id="dashboard" class="page active"></section><section id="borrowers" class="page"></section><section id="loanform" class="page"></section><section id="detail" class="page"></section><section id="payments" class="page"></section><section id="settings" class="page"></section><section id="chat" class="page"></section>
