@@ -1,5 +1,11 @@
 name: Check MK Debt JavaScript
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'app*.html'
+      - '.github/workflows/check-mkdebt-js.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -8,16 +14,47 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check stable app JavaScript
+      - name: Check inline JavaScript in main and app pages
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
-          s=Path('app2.html').read_text(encoding='utf-8')
-          m=re.search(r'<script>([\s\S]*?)</script>',s)
-          if not m:
-              raise SystemExit('No script block found in app2.html')
-          Path('/tmp/mkdebt.js').write_text(m.group(1),encoding='utf-8')
+          files = [Path('index.html'), *sorted(Path('.').glob('app*.html'))]
+          count = 0
+          for source in files:
+              if not source.exists():
+                  continue
+              text = source.read_text(encoding='utf-8')
+              scripts = re.findall(r'<script\\b[^>]*>([\\s\\S]*?)</script\\s*>', text, re.I)
+              for i, script in enumerate(scripts, 1):
+                  if not script.strip():
+                      continue
+                  out = Path(f'/tmp/mkdebt-{source.stem}-{i}.js')
+                  out.write_text(script, encoding='utf-8')
+                  count += 1
+              print(f'{source}: found {len(scripts)} inline script block(s)')
+          if count == 0:
+              raise SystemExit('No inline JavaScript blocks found')
           PY
-          node --check /tmp/mkdebt.js
-          echo 'MK Debt stable JavaScript syntax OK'
+          for file in /tmp/mkdebt-*.js; do
+            [ -e "$file" ] || continue
+            node --check "$file"
+          done
+          echo 'MK Debt inline JavaScript syntax checks passed'
+      - name: Guard data key and share consent requirements
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('index.html').read_text(encoding='utf-8')
+          required = {
+              'stable localStorage key': "const KEY='mk-debt-live-v3'",
+              'explicit location consent': 'mk-share-location-send',
+              'cancel without location': 'mk-share-location-cancel',
+              'cancel invalidates pending request': 'locationRequestCancelled=true',
+              'borrower share mode': 'function showShare(data)'
+          }
+          missing = [label for label, needle in required.items() if needle not in s]
+          if missing:
+              raise SystemExit('Missing required safeguards: ' + ', '.join(missing))
+          print('Data key and Share Link consent safeguards verified')
+          PY
