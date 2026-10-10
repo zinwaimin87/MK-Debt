@@ -189,7 +189,7 @@ async function recordCloudRequest(id){
   if(!l){toast('ဤချေးငွေကို လက်ရှိဖုန်းစာရင်းထဲ မတွေ့ပါ။ Backup/Cloud Sync ကို စစ်ပါ။');return}
   if(String(l.name||'').trim().toLowerCase()!==String(r.borrower_name||'').trim().toLowerCase()){toast('အမည်မကိုက်ညီပါ။ မှားယွင်းသောအကြွေးစာရင်းထဲ မသွင်းစေရန် ရပ်ထားပါသည်။');return}
   if(!(Number(r.amount)>0)||!Number.isFinite(Number(r.amount))){toast('တောင်းဆိုထားသော ပမာဏ မမှန်ကန်ပါ။');return}
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(r.requested_payment_date||''))||Number.isNaN(Date.parse(r.requested_payment_date))){toast('ပေးချေမည့်ရက်စွဲ မမှန်ကန်ပါ။');return}
+  if(!/\^\d{4}-\d{2}-\d{2}\$/.test(String(r.requested_payment_date||''))||Number.isNaN(Date.parse(r.requested_payment_date))){toast('ပေးချေမည့်ရက်စွဲ မမှန်ကန်ပါ။');return}
   if(String(r.currency||'').toUpperCase()!==String(l.currency||'MMK').toUpperCase()){toast('ငွေကြေးအမျိုးအစား မကိုက်ညီပါ။ မစစ်ဆေးမချင်း စာရင်းမသွင်းပါ။');return}
   if(!confirm(r.borrower_name+' ၏ '+fmt(r.amount,r.currency)+' တောင်းဆိုချက်ကို လက်ခံပြီး ငွေပေးချေမှုမှတ်တမ်းအဖြစ် သိမ်းမလား။'))return;
   let interest=(r.request_type==='principal'?0:N(r.amount)),principal=(r.request_type==='principal'?N(r.amount):0),methodMatch=String(r.message||'').match(/ငွေပေးချေနည်းလမ်း:\s*(ငွေသား|Bank QR)/),methodLabel=methodMatch?methodMatch[1]:'မသတ်မှတ်ထားပါ';
