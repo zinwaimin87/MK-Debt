@@ -195,6 +195,8 @@ async function recordCloudRequest(id){
   if(!confirm(r.borrower_name+' ၏ '+fmt(r.amount,r.currency)+' တောင်းဆိုချက်ကို လက်ခံပြီး ငွေပေးချေမှုမှတ်တမ်းအဖြစ် သိမ်းမလား။'))return;
   let interest=(r.request_type==='principal'||r.request_type==='interest_stop'?0:N(r.amount)),principal=(r.request_type==='principal'?N(r.amount):0),arrearsPayment=(r.request_type==='interest_stop'?N(r.amount):0),methodMatch=String(r.message||'').match(/ငွေပေးချေနည်းလမ်း:\s*(ငွေသား|Bank QR)/),methodLabel=methodMatch?methodMatch[1]:'မသတ်မှတ်ထားပါ';
   if(principal>principalBalance(l)){toast('တောင်းဆိုထားသော အရင်းငွေသည် လက်ကျန်အရင်းထက် များနေပါသည်။ ပြင်ဆင်ရန်လိုသည်။');return}
+  if(r.request_type==='interest'&&interest>interestTotals(l).unpaid+0.005){toast('တောင်းဆိုထားသော အတိုးငွေသည် လက်ရှိအတိုးကျန်ငွေထက် များနေပါသည်။ လက်ကျန်ကို စစ်ဆေးပြီးမှ လက်ခံပါ။');return}
+  if(r.request_type==='interest_stop'&&arrearsPayment>arrearsRemaining(l)+0.005){toast('တောင်းဆိုထားသော အတိုးဟောင်း/ဆိုင်းငံ့ငွေသည် လက်ကျန်ထက် များနေပါသည်။ လက်ကျန်ကို စစ်ဆေးပြီးမှ လက်ခံပါ။');return}
   let cloudPay={id:'P'+Date.now(),loanId:l.id,date:r.requested_payment_date,interest,principal,arrearsPayment,amount:interest+principal+arrearsPayment,method:methodLabel,receivedBy:'Owner',createdAt:new Date().toISOString(),note:'Cloud Share မှ လက်ခံထားသောတောင်းဆိုချက် '+r.id+' · နည်းလမ်း: '+methodLabel+(r.message?' · '+r.message:'')};db.payments.push(cloudPay);paymentAudit('created',cloudPay);
   save();
   try{
